@@ -1,0 +1,42 @@
+[project]
+name = "gdn-tri-inverse"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "\"GDN Triangular Inverse Team\""}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy==1.26.4",
+  "scipy==1.13.1",
+  "decorator==5.1.1",
+  "psutil==6.1.0",
+  "PyYAML==6.0.2",
+  "attrs==24.2.0",
+  "einops==0.8.1",
+  "torch==2.8.0",
+  "torch-npu==2.8.0.post2",
+  "pandas==2.3.3",
+  "seaborn==0.13.2",
+  "matplotlib==3.10.8",
+  "triton-ascend==3.2.0",
+  "pto_kernels @ git+https://github.com/huawei-csl/pto-kernels.git",
+]
+
+[project.optional-dependencies]
+kernels = [
+  "sgl-kernel-npu",
+]
+
+[tool.pip]
+extra-index-url = ["https://download.pytorch.org/whl/cpu", "https://test.pypi.org/simple/"]
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)"
+]
