@@ -3,16 +3,16 @@
 import pytest
 from torch.testing import assert_close
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as torch_functional
 import torch_npu
  
-from gdn_torch_ref import (
+from gdn_tri_inverse.core import (
     inv_tril_inplace,
     recurrent_gated_delta_rule_ref,
     chunk_gated_delta_rule_ref,
 )
  
-device = "npu:7"  # pick an available device
+device = "npu:0"  # pick an available device
  
  
 @pytest.mark.parametrize("chunk_size", [4, 8, 16, 32, 64])
@@ -75,18 +75,18 @@ def test_chunk_forward_ref(
     k = torch.rand(B, T, H, D, dtype=dtype)
     v = torch.rand(B, T, H, D, dtype=dtype)
     beta = torch.rand(B, T, H, dtype=dtype).sigmoid()
-    g = F.logsigmoid(torch.rand(B, T, H, dtype=torch.float32))
+    g = torch_func.logsigmoid(torch.rand(B, T, H, dtype=torch.float32))
     g = g / gate_logit_normalizer
     g = g * (torch.rand_like(g) > mask_p)
     h0 = torch.zeros(B, H, D, D, dtype=torch.float32)
     q, k, v, beta, g, h0 = map(lambda x: x.to(device), (q, k, v, beta, g, h0))
  
-    q = F.normalize(q.clone(), p=2, dim=-1)
-    k = F.normalize(k.clone(), p=2, dim=-1)
+    q = torch_func.normalize(q.clone(), p=2, dim=-1)
+    k = torch_func.normalize(k.clone(), p=2, dim=-1)
  
     chunk_o, chunk_ht = chunk_gated_delta_rule_ref(
-        q=F.normalize(q.clone(), p=2, dim=-1),
-        k=F.normalize(k.clone(), p=2, dim=-1),
+        q=torch_func.normalize(q.clone(), p=2, dim=-1),
+        k=torch_func.normalize(k.clone(), p=2, dim=-1),
         v=v.clone(),
         beta=beta.clone(),
         g=g.clone(),
@@ -96,8 +96,8 @@ def test_chunk_forward_ref(
     )
  
     ref_o, ref_ht = recurrent_gated_delta_rule_ref(
-        q=F.normalize(q.clone(), p=2, dim=-1),
-        k=F.normalize(k.clone(), p=2, dim=-1),
+        q=torch_func.normalize(q.clone(), p=2, dim=-1),
+        k=torch_func.normalize(k.clone(), p=2, dim=-1),
         v=v.clone(),
         beta=beta.clone(),
         g=g.clone(),

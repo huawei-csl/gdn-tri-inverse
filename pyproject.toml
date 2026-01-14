@@ -1,0 +1,29 @@
+[project]
+name = "gdn-tri-inverse"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "\"GDN Triangular Inverse Team - Huawei VNRC\""}
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy==1.26.4",
+  "scipy==1.13.1",
+  "decorator==5.1.1",
+  "psutil==6.1.0",
+  "PyYAML==6.0.2",
+  "attrs==24.2.0",
+  "einops==0.8.1",
+  "torch @ https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl",
+  "torch_npu @ https://gitcode.com/Ascend/pytorch/releases/download/v7.1.0.2-pytorch2.6.0/torch_npu-2.6.0.post2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+]
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest (>=9.0.2,<10.0.0)"
+]

@@ -6,15 +6,15 @@ from einops import rearrange
 import torch_npu
 import typing
 
-def inv_tril_inplace(attn):
+def inv_tril_inplace(A):
     """compute inv(I + A) where A is strict lower-triangular"""
     # Adapted from https://github.com/huggingface/transformers/blob/v4.57.1/src/transformers/models/qwen3_next/modeling_qwen3_next.py#L485-L490
-    assert attn.shape[-2] == attn.shape[-1]
-    chunk_size = attn.shape[-1]
+    assert A.shape[-2] == A.shape[-1]
+    chunk_size = A.shape[-1]
     for i in range(1, chunk_size):
-        row = attn[..., i, :i].clone()
-        sub = attn[..., :i, :i].clone()
-        attn[..., i, :i] = row + (row.unsqueeze(-1) * sub).sum(-2)
+        row = A[..., i, :i].clone()
+        sub = A[..., :i, :i].clone()
+        A[..., i, :i] = row + (row.unsqueeze(-1) * sub).sum(-2)
  
  
 def recurrent_gated_delta_rule_ref(
