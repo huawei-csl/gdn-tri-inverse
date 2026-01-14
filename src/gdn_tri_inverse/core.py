@@ -1,7 +1,7 @@
 # From https://github.dev/fla-org/flash-linear-attention/blob/v0.4.0/tests/ops/test_gated_delta.py
  
 import torch
-import torch.nn.functional as F
+import torch.nn.functional as torch_func
 from einops import rearrange
 import torch_npu
 import typing
@@ -78,11 +78,11 @@ def chunk_gated_delta_rule_ref(
     pad_len = (BT - (T % BT)) % BT
     if pad_len > 0:
         # Pad all tensors
-        q = F.pad(q, (0, 0, 0, pad_len))
-        k = F.pad(k, (0, 0, 0, pad_len))
-        v = F.pad(v, (0, 0, 0, pad_len))
-        beta = F.pad(beta, (0, pad_len))
-        g = F.pad(g, (0, pad_len))
+        q = torch_func.pad(q, (0, 0, 0, pad_len))
+        k = torch_func.pad(k, (0, 0, 0, pad_len))
+        v = torch_func.pad(v, (0, 0, 0, pad_len))
+        beta = torch_func.pad(beta, (0, pad_len))
+        g = torch_func.pad(g, (0, pad_len))
     q, k, v, beta, g = map(lambda x: x.to(torch.float32), [q, k, v, beta, g])
     decay = g
     chunk_size = BT

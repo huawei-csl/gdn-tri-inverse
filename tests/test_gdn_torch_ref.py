@@ -3,7 +3,7 @@
 import pytest
 from torch.testing import assert_close
 import torch
-import torch.nn.functional as torch_functional
+import torch.nn.functional as torch_func
 import torch_npu
  
 from gdn_tri_inverse.core import (
