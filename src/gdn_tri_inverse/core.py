@@ -5,17 +5,7 @@ import torch.nn.functional as torch_func
 from einops import rearrange
 import torch_npu
 import typing
-
-def inv_tril_inplace(A):
-    """compute inv(I + A) where A is strict lower-triangular"""
-    # Adapted from https://github.com/huggingface/transformers/blob/v4.57.1/src/transformers/models/qwen3_next/modeling_qwen3_next.py#L485-L490
-    assert A.shape[-2] == A.shape[-1]
-    chunk_size = A.shape[-1]
-    for i in range(1, chunk_size):
-        row = A[..., i, :i].clone()
-        sub = A[..., :i, :i].clone()
-        A[..., i, :i] = row + (row.unsqueeze(-1) * sub).sum(-2)
- 
+from .linalg import inv_tril_inplace
  
 def recurrent_gated_delta_rule_ref(
     q: torch.Tensor,

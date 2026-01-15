@@ -7,35 +7,13 @@ import torch.nn.functional as torch_func
 import torch_npu
  
 from gdn_tri_inverse.core import (
-    inv_tril_inplace,
     recurrent_gated_delta_rule_ref,
     chunk_gated_delta_rule_ref,
 )
  
 device = "npu:0"  # pick an available device
  
- 
-@pytest.mark.parametrize("chunk_size", [4, 8, 16, 32, 64])
-@pytest.mark.parametrize("batch", [1, 17])
-@pytest.mark.parametrize(
-    "dtype,atol,rtol", [(torch.float32, 1e-5, 1e-5), (torch.float16, 1e-2, 1e-2)]
-)
-@torch.inference_mode()
-def test_inv_tril(chunk_size, batch, dtype, atol, rtol):
-    torch.manual_seed(0)
-    shape = (batch, chunk_size, chunk_size)
- 
-    # NOTE: scale-down off-diagonals to avoid bad condition number
-    scale = 0.1 if chunk_size >= 64 else 0.2
-    A = scale * torch.abs(torch.rand(*shape, device=device, dtype=dtype))
-    A = torch.tril(A, diagonal=-1)
-    A_inv = A.clone()
-    inv_tril_inplace(A_inv)
- 
-    I = torch.eye(chunk_size, device=device, dtype=dtype)
-    I_recover = (I - A) @ (I + A_inv)
-    assert_close(I_recover, I.expand_as(I_recover), atol=atol, rtol=rtol)
- 
+
  
 @pytest.mark.parametrize(
     ("B", "T", "H", "D", "scale", "gate_logit_normalizer", "mask_p", "dtype"),

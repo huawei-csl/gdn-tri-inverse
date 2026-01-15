@@ -16,7 +16,8 @@ dependencies = [
   "attrs==24.2.0",
   "einops==0.8.1",
   "torch @ https://download.pytorch.org/whl/cpu/torch-2.6.0%2Bcpu-cp310-cp310-linux_x86_64.whl",
-  "torch_npu @ https://gitcode.com/Ascend/pytorch/releases/download/v7.1.0.2-pytorch2.6.0/torch_npu-2.6.0.post2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+  "torch_npu @ https://gitcode.com/Ascend/pytorch/releases/download/v7.1.0.2-pytorch2.6.0/torch_npu-2.6.0.post2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+  "tcuscan @ file:///scratch/TCUSCAN/tcuscan-0.1.0-cp310-cp310-linux_x86_64.whl"
 ]
 
 [build-system]
