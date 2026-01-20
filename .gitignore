@@ -3,3 +3,5 @@
 **/__pycache__/
 **/fusion_result.json
 **/*.egg-info/
+**/output/
+*.csv

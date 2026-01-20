@@ -1,31 +1,32 @@
 #!/usr/bin/env python
 # coding: utf-8
- 
+
 import torch
 import torch.nn.functional as F
 import torch_npu
- 
+
 import os
 import types
 import typing
 from dataclasses import dataclass
 import logging
- 
+
 _DEFAULT_MAX_CACHE_SIZE = 256 * 1024 * 1024
+
 logger = logging.getLogger(__name__)
- 
- 
+
+
 @dataclass
 class Device:
     module: types.ModuleType
     name: str
- 
+
     def sync(self) -> None:
         self.module.synchronize()
- 
+
     def event(self) -> "typing.Self.module.Event":
         return self.module.Event(enable_timing=True)
- 
+
     def id(self) -> int:
         if ":" in self.name:
             try:
@@ -35,11 +36,11 @@ class Device:
                 return 0
         else:
             return 0
- 
+
     def device_type(self) -> str:
         return self.name.split(":")[0]
- 
- 
+
+
 def run_benchmark(
     device: Device,
     fn: typing.Callable,
@@ -48,35 +49,35 @@ def run_benchmark(
 ):
     """
     Benchmark a given function with warmup.
- 
+
     Args:
         device: Device to run benchmark on.
         fn: Function to benchmark.
         warmup_iters: Number of warmup runs.
         benchmark_iters: Number of benchmark runs.
- 
+
     Returns:
         Average time in microseconds.
     """
     torch.npu.set_device(device.id())
- 
+
     start_events = [device.event() for _ in range(benchmark_iters)]
     end_events = [device.event() for _ in range(benchmark_iters)]
- 
+
     device.sync()
     for i in range(warmup_iters):
         logger.info(f"Warmup iteration: {i}")
         fn()
- 
+
     device.sync()
- 
+
     # We maintain a buffer of 256 MB that we clear
     # before each kernel call to make sure that the L2 cache
     # doesn't contain any input data before the run
     # Copied from https://github.com/triton-lang/triton/blob/v2.1.0/python/triton/testing.py#L110
     cache_size = _DEFAULT_MAX_CACHE_SIZE
     cache = torch.ones(cache_size, dtype=torch.int8, device=device.name)
- 
+
     for i in range(benchmark_iters):
         logger.info(f"Benchmarking iteration {i}")
         cache.zero_()
@@ -88,3 +89,22 @@ def run_benchmark(
         elapsed_time_ms = int(start_events[i].elapsed_time(end_events[i]))
         logger.info(f"Elapsed time: {elapsed_time_ms:,} ms")
         yield elapsed_time_ms
+
+
+def run_torch_profiler(
+    profile_dir: str,
+    fn: typing.Callable,
+):
+    profiler = torch_npu.profiler.profile(
+        activities=[
+            torch_npu.profiler.ProfilerActivity.CPU,
+            torch_npu.profiler.ProfilerActivity.NPU,
+        ],
+        record_shapes=True,
+        with_stack=True,
+        with_flops=True,
+        on_trace_ready=torch_npu.profiler.tensorboard_trace_handler(profile_dir),
+    )
+
+    with profiler:
+        fn()
