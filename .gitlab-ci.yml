@@ -3,6 +3,7 @@ default:
 
 stages:
    - linter
+   - build
 
 # Define the workflow rules manually to make sure only a single pipeline
 # is created for each MR update. Without that, GitLab creates one pipeline
@@ -51,3 +52,24 @@ secret_detection:
     entrypoint: [""]
   script:
     - gitleaks detect -v --source .
+
+
+.build_config: &build_config
+  tags:
+    - baremetal
+  before_script:
+    - source /usr/local/Ascend/ascend-toolkit/set_env.sh
+    - pip3 install pyyaml setuptools pytest
+    - pip3 install https://gitcode.com/Ascend/pytorch/releases/download/v7.3.0-pytorch2.8.0/torch_npu-2.8.0.post2-cp310-cp310-manylinux_2_28_x86_64.whl --index-url https://download.pytorch.org/whl/cpu # https://github.com/sgl-project/sgl-kernel-npu/pull/326
+
+
+run_pto_isa_kernel:
+  <<: *build_config
+  stage: build
+  script:
+    - cd pto-isa-tri-inv/
+    - pip3 install -r requirements.txt
+    - git clone https://gitcode.com/cann/pto-isa.git PTO_ISA_ROOT
+    - pip install -U setuptools packaging
+    - bash run.sh
+
