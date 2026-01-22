@@ -1,11 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import torch
-import torch.nn.functional as F
 import torch_npu
 
-import os
 import types
 import typing
 from dataclasses import dataclass
@@ -31,7 +26,7 @@ class Device:
         if ":" in self.name:
             try:
                 return int(self.name.split(":")[1])
-            except Exception as e:
+            except Exception:
                 logger.error(f"Invalid input device string. Got {self.name}")
                 return 0
         else:

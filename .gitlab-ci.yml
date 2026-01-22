@@ -1,0 +1,53 @@
+default:
+  tags: [cpu]
+
+stages:
+   - linter
+
+# Define the workflow rules manually to make sure only a single pipeline
+# is created for each MR update. Without that, GitLab creates one pipeline
+# for branch update and one for MR update.
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_DRAFT'
+      when: never
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - when: never
+
+# Enable when there is at least one .sh file.
+.shell_check:
+  image: koalaman/shellcheck-alpine:stable
+  stage: linter
+  dependencies: []
+  before_script:
+    - shellcheck --version
+  script:
+    - find . -type f -name '*.sh' -print0 | xargs -0 shellcheck -x
+
+black:
+  stage: linter
+  image: python:3.10
+  script:
+    - pip3 install -U pip
+    - pip3 install black==25.12.0 # The version here should be the same as in .pre-commit-config.yaml
+    - black --check .
+
+.prospector:
+  stage: linter
+  image: python:3.10
+  script:
+    - pip install prospector==1.14.0
+    - prospector
+
+secret_detection:
+  stage: linter
+  dependencies: []
+  before_script: []
+  image:
+    name: zricethezav/gitleaks:v8.18.2
+    entrypoint: [""]
+  script:
+    - gitleaks detect -v --source .

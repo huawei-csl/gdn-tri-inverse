@@ -1,20 +1,19 @@
 # Adapted from https://github.com/fla-org/flash-linear-attention/pull/677
- 
+
 import pytest
 from torch.testing import assert_close
 import torch
 import torch.nn.functional as torch_func
-import torch_npu
- 
+import torch_npu  # noqa
+
 from gdn_tri_inverse.core import (
     recurrent_gated_delta_rule_ref,
     chunk_gated_delta_rule_ref,
 )
- 
-device = "npu:0"  # pick an available device
- 
 
- 
+device = "npu:0"  # pick an available device
+
+
 @pytest.mark.parametrize(
     ("B", "T", "H", "D", "scale", "gate_logit_normalizer", "mask_p", "dtype"),
     [
@@ -48,7 +47,7 @@ def test_chunk_forward_ref(
     dtype: torch.dtype,
 ):
     torch.manual_seed(42)
- 
+
     q = torch.rand(B, T, H, D, dtype=dtype)
     k = torch.rand(B, T, H, D, dtype=dtype)
     v = torch.rand(B, T, H, D, dtype=dtype)
@@ -58,10 +57,10 @@ def test_chunk_forward_ref(
     g = g * (torch.rand_like(g) > mask_p)
     h0 = torch.zeros(B, H, D, D, dtype=torch.float32)
     q, k, v, beta, g, h0 = map(lambda x: x.to(device), (q, k, v, beta, g, h0))
- 
+
     q = torch_func.normalize(q.clone(), p=2, dim=-1)
     k = torch_func.normalize(k.clone(), p=2, dim=-1)
- 
+
     chunk_o, chunk_ht = chunk_gated_delta_rule_ref(
         q=torch_func.normalize(q.clone(), p=2, dim=-1),
         k=torch_func.normalize(k.clone(), p=2, dim=-1),
@@ -72,7 +71,7 @@ def test_chunk_forward_ref(
         output_final_state=True,
         initial_state=h0.clone(),
     )
- 
+
     ref_o, ref_ht = recurrent_gated_delta_rule_ref(
         q=torch_func.normalize(q.clone(), p=2, dim=-1),
         k=torch_func.normalize(k.clone(), p=2, dim=-1),
@@ -83,6 +82,6 @@ def test_chunk_forward_ref(
         output_final_state=True,
         initial_state=h0.clone(),
     )
- 
+
     assert_close(chunk_o, ref_o)
     assert_close(chunk_ht, ref_ht)

@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-import torch_npu
+import torch_npu  # noqa
 import tcuscan
 import argparse
 import typing
@@ -8,7 +8,7 @@ import typing
 
 from gdn_tri_inverse.core import chunk_gated_delta_rule_ref
 from gdn_tri_inverse.linalg import inv_tril_inplace, tri_inv_vcs
-from utils import *
+from utils import Device, run_torch_profiler, run_benchmark
 
 NPU_DEVICE = "npu:0"
 device = Device(torch.npu, NPU_DEVICE)

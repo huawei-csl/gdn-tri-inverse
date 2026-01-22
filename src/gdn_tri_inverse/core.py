@@ -1,12 +1,13 @@
 # From https://github.dev/fla-org/flash-linear-attention/blob/v0.4.0/tests/ops/test_gated_delta.py
- 
+
 import torch
 import torch.nn.functional as torch_func
 from einops import rearrange
-import torch_npu
+import torch_npu  # noqa
 import typing
 from .linalg import inv_tril_inplace
- 
+
+
 def recurrent_gated_delta_rule_ref(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -42,8 +43,8 @@ def recurrent_gated_delta_rule_ref(
         h = None
     o = o.transpose(1, 2).contiguous()
     return o, h
- 
- 
+
+
 def chunk_gated_delta_rule_ref(
     q: torch.Tensor,
     k: torch.Tensor,
@@ -63,7 +64,7 @@ def chunk_gated_delta_rule_ref(
     q, k, v, beta, g = map(
         lambda x: x.transpose(1, 2).contiguous().to(torch.float32), [q, k, v, beta, g]
     )
- 
+
     T = q.shape[-2]
     pad_len = (BT - (T % BT)) % BT
     if pad_len > 0:
@@ -94,12 +95,12 @@ def chunk_gated_delta_rule_ref(
     decay = decay.squeeze(-1).cumsum(-1)
     decay_exp = decay.exp()[..., None]
     L_mask = ((decay.unsqueeze(-1) - decay.unsqueeze(-2)).tril().exp().float()).tril()
- 
+
     attn = -((k_beta @ k.transpose(-1, -2)) * L_mask).masked_fill(mask, 0)
     inv_fn(attn.to(torch.float16))
     attn = attn.to(torch.float32)
     attn = attn + torch.eye(chunk_size, dtype=torch.float, device=q.device)
- 
+
     k_cumsum = attn @ v
     k_cumdecay = attn @ (k_beta * decay_exp)
     v = k_cumsum
