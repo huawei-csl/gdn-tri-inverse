@@ -54,7 +54,7 @@ FILE(GLOB _OPPLUGIN_PYBIND_OPS_SRCS
 set(_OPPLUGIN_PYBIND_NAME op_extension)
 
 ascendc_library(no_workspace_kernel STATIC
-    csrc/kernel/add_custom.cpp
+    csrc/kernel/kernel_tri_inv_col_sweep.cpp
 )
 
 ascendc_include_directories(no_workspace_kernel PRIVATE

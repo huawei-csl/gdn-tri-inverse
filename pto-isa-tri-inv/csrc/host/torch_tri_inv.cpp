@@ -10,13 +10,13 @@ PARTICULAR PURPOSE. See LICENSE in the root of the software repository for the
 full text of the License.
 */
 
-#include "aclrtlaunch_add_custom_fp16.h"
-#include "aclrtlaunch_add_custom_fp32.h"
+#include "aclrtlaunch_triv_inv_col_sweep_fp16.h"
+#include "aclrtlaunch_triv_inv_col_sweep_fp32.h"
 #include "utils.h"
 
 namespace ascendc_path {
 
-at::Tensor run_add_custom(const at::Tensor& x, const at::Tensor& y) {
+at::Tensor run_tri_inv(const at::Tensor& x) {
   const auto dtype = x.options().dtype();
   at::Tensor z = at::empty_like(x);
   // Define the number of blocks of vector core
@@ -24,10 +24,10 @@ at::Tensor run_add_custom(const at::Tensor& x, const at::Tensor& y) {
   uint32_t totalLength = x.numel();
 
   if (dtype == at::kHalf) {
-    EXEC_KERNEL_CMD(add_custom_fp16, blockDim, x, y, z, totalLength);
+    EXEC_KERNEL_CMD(triv_inv_col_sweep_fp16, blockDim, x, z, totalLength);
 
   } else if (dtype == at::kFloat) {
-    EXEC_KERNEL_CMD(add_custom_fp32, blockDim, x, y, z, totalLength);
+    EXEC_KERNEL_CMD(triv_inv_col_sweep_fp32, blockDim, x, z, totalLength);
 
   } else {
     throw std::runtime_error("Unsupported dtype for add_custom kernel");
@@ -38,15 +38,11 @@ at::Tensor run_add_custom(const at::Tensor& x, const at::Tensor& y) {
 }  // namespace ascendc_path
 
 namespace {
-TORCH_LIBRARY_FRAGMENT(npu, m) {
-  // Declare the custom operator schema
-  m.def("my_add(Tensor x, Tensor y) -> Tensor");
-}
+TORCH_LIBRARY_FRAGMENT(npu, m) { m.def("tri_inv(Tensor x) -> Tensor"); }
 }  // namespace
 
 namespace {
 TORCH_LIBRARY_IMPL(npu, PrivateUse1, m) {
-  // Register the custom operator implementation function
-  m.impl("my_add", TORCH_FN(ascendc_path::run_add_custom));
+  m.impl("tri_inv", TORCH_FN(ascendc_path::run_tri_inv));
 }
 }  // namespace
