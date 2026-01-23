@@ -72,4 +72,5 @@ run_pto_isa_kernel:
     - git clone https://gitcode.com/cann/pto-isa.git PTO_ISA_ROOT
     - pip install -U setuptools packaging
     - bash run.sh
+    - python3 -m pytest tests/
 

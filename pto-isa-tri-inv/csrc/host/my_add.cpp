@@ -10,22 +10,29 @@ PARTICULAR PURPOSE. See LICENSE in the root of the software repository for the
 full text of the License.
 */
 
-#include "aclrtlaunch_add_custom.h"
+#include "aclrtlaunch_add_custom_fp16.h"
+#include "aclrtlaunch_add_custom_fp32.h"
 #include "utils.h"
 
 namespace ascendc_path {
 
 at::Tensor run_add_custom(const at::Tensor& x, const at::Tensor& y) {
+  const auto dtype = x.options().dtype();
   at::Tensor z = at::empty_like(x);
   // Define the number of blocks of vector core
   uint32_t blockDim = 20;
-  uint32_t totalLength = 1;
-  // Calculate the total number of elements
-  for (uint32_t size : x.sizes()) {
-    totalLength *= size;
+  uint32_t totalLength = x.numel();
+
+  if (dtype == at::kHalf) {
+    EXEC_KERNEL_CMD(add_custom_fp16, blockDim, x, y, z, totalLength);
+
+  } else if (dtype == at::kFloat) {
+    EXEC_KERNEL_CMD(add_custom_fp32, blockDim, x, y, z, totalLength);
+
+  } else {
+    throw std::runtime_error("Unsupported dtype for add_custom kernel");
   }
-  // Launch the custom kernel
-  EXEC_KERNEL_CMD(add_custom, blockDim, x, y, z, totalLength);
+
   return z;
 }
 }  // namespace ascendc_path

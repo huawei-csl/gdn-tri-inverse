@@ -1,3 +1,4 @@
+lib*.so
 PTO_ISA_ROOT/
 dist/
 build

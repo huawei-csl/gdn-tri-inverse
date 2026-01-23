@@ -6,5 +6,9 @@ setup_once:
 	git clone https://gitcode.com/cann/pto-isa.git PTO_ISA_ROOT
 
 
-all:
+build:
 	bash run.sh
+
+
+test:
+	pytest -v tests/test_add_custom.py
