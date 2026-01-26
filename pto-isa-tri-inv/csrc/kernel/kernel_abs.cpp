@@ -24,8 +24,8 @@ template <typename T, unsigned matrix_size>
 AICORE void runTAbs(__gm__ T* x, __gm__ T* z, uint32_t total_length) {
   // define GlobalData on global memory with shape and stride
   using ShapeDim5 = pto::Shape<1, 1, 1, matrix_size, matrix_size>;
-  using StridDim5 = pto::Stride<1, 1, 1, matrix_size, 1>;
-  using GlobalData = pto::GlobalTensor<T, ShapeDim5, StridDim5>;
+  using StrideDim5 = pto::Stride<1, 1, 1, matrix_size, 1>;
+  using GlobalData = pto::GlobalTensor<T, ShapeDim5, StrideDim5>;
 
   // define TileData on UB buffer with static shape and dynamic mask
   using TileData = Tile<TileType::Vec, T, matrix_size, matrix_size,
@@ -51,39 +51,36 @@ AICORE void runTAbs(__gm__ T* x, __gm__ T* z, uint32_t total_length) {
   TASSIGN(zTiles, UB_ZERO_ADDR + TILE_SIZE_IN_BYTES);
 
   // total number of loops of one vector core
-  int32_t loopCount = matrix_size;
+  constexpr int32_t loopCount = matrix_size;
   // address offset between vector cores
-  unsigned offset = block_idx * tile_len;
+  // 'block_idx' is a special variable
+  const uint32_t offset = block_idx * tile_len;
 
-  // synchronization operations between hardware pipelines
-  set_flag(PIPE_V, PIPE_MTE2, EVENT_ID0);
-  set_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
   for (uint32_t i = 0; i < loopCount; i++) {
-    unsigned inner_offset = offset + i * matrix_size;
+    const unsigned inner_offset = offset + i * matrix_size;
     // Prepare read GM offset
     TASSIGN(xGlobal, x + inner_offset);
     TASSIGN(zGlobal, z + inner_offset);
 
+    set_flag(PIPE_V, PIPE_MTE2, EVENT_ID0);
     wait_flag(PIPE_V, PIPE_MTE2, EVENT_ID0);
+
     // load data from global memory to UB buffer
     TLOAD(xTiles, xGlobal);
 
     set_flag(PIPE_MTE2, PIPE_V, EVENT_ID0);
     wait_flag(PIPE_MTE2, PIPE_V, EVENT_ID0);
 
-    wait_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
     // perform elementwise absolute value
     TABS(zTiles, xTiles);
-    set_flag(PIPE_V, PIPE_MTE2, EVENT_ID0);
 
     set_flag(PIPE_V, PIPE_MTE3, EVENT_ID0);
     wait_flag(PIPE_V, PIPE_MTE3, EVENT_ID0);
     // store data from UB buffer to global memory
     TSTORE(zGlobal, zTiles);
     set_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
+    wait_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
   }
-  wait_flag(PIPE_V, PIPE_MTE2, EVENT_ID0);
-  wait_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
 }
 
 extern "C" __global__ AICORE void vabs_fp16(GM_ADDR x, GM_ADDR z,
