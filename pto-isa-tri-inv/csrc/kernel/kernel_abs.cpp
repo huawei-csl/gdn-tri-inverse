@@ -21,7 +21,7 @@ full text of the License.
 using namespace pto;
 
 template <typename T, unsigned matrix_size>
-AICORE void runTTriInv(__gm__ T* z, __gm__ T* x, uint32_t total_length) {
+AICORE void runTAbs(__gm__ T* x, __gm__ T* z, uint32_t total_length) {
   // define GlobalData on global memory with shape and stride
   using ShapeDim5 = pto::Shape<1, 1, 1, matrix_size, matrix_size>;
   using StridDim5 = pto::Stride<1, 1, 1, matrix_size, 1>;
@@ -86,20 +86,18 @@ AICORE void runTTriInv(__gm__ T* z, __gm__ T* x, uint32_t total_length) {
   wait_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
 }
 
-extern "C" __global__ AICORE void triv_inv_col_sweep_fp16(GM_ADDR x, GM_ADDR z,
-                                                          uint32_t in_length) {
-  // Define the tile size
+extern "C" __global__ AICORE void vabs_fp16(GM_ADDR x, GM_ADDR z,
+                                            uint32_t in_length) {
   constexpr unsigned martix_size = 64;
-  // main kernel, totalLength is dynamic input
-  runTTriInv<half, martix_size>((__gm__ half*)z, (__gm__ half*)x, in_length);
+  // main kernel, in_length is dynamic input
+  runTAbs<half, martix_size>((__gm__ half*)x, (__gm__ half*)z, in_length);
 }
 
-extern "C" __global__ AICORE void triv_inv_col_sweep_fp32(GM_ADDR x, GM_ADDR z,
-                                                          uint32_t in_length) {
-  // Define the tile size
+extern "C" __global__ AICORE void vabs_fp32(GM_ADDR x, GM_ADDR z,
+                                            uint32_t in_length) {
   constexpr unsigned martix_size = 64;
-  // main kernel, totalLength is dynamic input
-  runTTriInv<float, martix_size>((__gm__ float*)z, (__gm__ float*)x, in_length);
+  // main kernel, in_length is dynamic input
+  runTAbs<float, martix_size>((__gm__ float*)x, (__gm__ float*)z, in_length);
 }
 
 #endif
