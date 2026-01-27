@@ -63,7 +63,7 @@ secret_detection:
     - pip3 install https://gitcode.com/Ascend/pytorch/releases/download/v7.3.0-pytorch2.8.0/torch_npu-2.8.0.post2-cp310-cp310-manylinux_2_28_x86_64.whl --index-url https://download.pytorch.org/whl/cpu # https://github.com/sgl-project/sgl-kernel-npu/pull/326
 
 
-run_pto_isa_kernel:
+run_pto_isa_add_kernel:
   <<: *build_config
   stage: build
   script:
@@ -72,5 +72,15 @@ run_pto_isa_kernel:
     - git clone https://gitcode.com/cann/pto-isa.git PTO_ISA_ROOT
     - pip install -U setuptools packaging
     - bash run.sh
-    - python3 -m pytest tests/
+    - python3 -m pytest -v tests/test_abs.py
 
+run_pto_isa_tri_inv_kernel:
+  <<: *build_config
+  stage: build
+  script:
+    - cd pto-isa-tri-inv/
+    - pip3 install -r requirements.txt
+    - git clone https://gitcode.com/cann/pto-isa.git PTO_ISA_ROOT
+    - pip install -U setuptools packaging
+    - bash run.sh
+    - python3 -m pytest -v tests/test_tri_inv_col_sweep.py

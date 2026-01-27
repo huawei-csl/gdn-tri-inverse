@@ -17,20 +17,32 @@ full text of the License.
 namespace ascendc_path {
 
 at::Tensor run_tri_inv(const at::Tensor& x) {
+  const at::Device device = x.options().device();
   const auto dtype = x.options().dtype();
-  at::Tensor z = at::empty_like(x);
-  // Define the number of blocks of vector core
-  uint32_t blockDim = 20;
-  uint32_t totalLength = x.numel();
+  if (x.dim() < 2) {
+    throw std::runtime_error("Input tensor must have at least 2 dimensions.\n");
+  }
+
+  const uint32_t matrix_size = static_cast<uint32_t>(x.size(-1));
+  if (matrix_size != x.size(-2)) {
+    throw std::runtime_error("Only square matrices are supported.\n");
+  }
+
+  const uint32_t num_elems = static_cast<uint32_t>(x.numel());
+  const uint32_t block_dim =
+      static_cast<uint32_t>(num_elems / (matrix_size * matrix_size));
+  const at::Tensor z = at::empty_like(x);
 
   if (dtype == at::kHalf) {
-    EXEC_KERNEL_CMD(triv_inv_col_sweep_fp16, blockDim, x, z, totalLength);
+    EXEC_KERNEL_CMD(triv_inv_col_sweep_fp16, block_dim, x, z, num_elems,
+                    matrix_size);
 
   } else if (dtype == at::kFloat) {
-    EXEC_KERNEL_CMD(triv_inv_col_sweep_fp32, blockDim, x, z, totalLength);
+    EXEC_KERNEL_CMD(triv_inv_col_sweep_fp32, block_dim, x, z, num_elems,
+                    matrix_size);
 
   } else {
-    throw std::runtime_error("Unsupported dtype for add_custom kernel");
+    throw std::runtime_error("Unsupported dtype for `tri_inv` kernel");
   }
 
   return z;

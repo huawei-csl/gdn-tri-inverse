@@ -9,9 +9,8 @@ BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A
 PARTICULAR PURPOSE. See LICENSE in the root of the software repository for the
 full text of the License.
 */
+#pragma once
 
-#ifndef EXTENTION_CSRC_UTILS_H
-#define EXTENTION_CSRC_UTILS_H
 #include <ATen/ATen.h>
 #include <torch/library.h>
 
@@ -60,8 +59,8 @@ constexpr auto ConvertTypes(Ts&... args) {
             ACLRT_LAUNCH_KERNEL(kernel_name)(blockdim, acl_stream, params...); \
           },                                                                   \
           converted_params);                                                   \
+      return 0;                                                                \
     };                                                                         \
     at_npu::native::OpCommand::RunOpApi(#kernel_name, acl_call);               \
   } while (false)
 }  // namespace ascendc_path
-#endif
