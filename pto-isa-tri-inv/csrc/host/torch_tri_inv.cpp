@@ -14,7 +14,7 @@ full text of the License.
 #include "aclrtlaunch_triv_inv_col_sweep_fp32.h"
 #include "utils.h"
 
-namespace ascendc_path {
+namespace pto_isa_ops {
 
 at::Tensor run_tri_inv(const at::Tensor& x) {
   const at::Device device = x.options().device();
@@ -47,7 +47,7 @@ at::Tensor run_tri_inv(const at::Tensor& x) {
 
   return z;
 }
-}  // namespace ascendc_path
+}  // namespace pto_isa_ops
 
 namespace {
 TORCH_LIBRARY_FRAGMENT(npu, m) { m.def("tri_inv(Tensor x) -> Tensor"); }
@@ -55,6 +55,6 @@ TORCH_LIBRARY_FRAGMENT(npu, m) { m.def("tri_inv(Tensor x) -> Tensor"); }
 
 namespace {
 TORCH_LIBRARY_IMPL(npu, PrivateUse1, m) {
-  m.impl("tri_inv", TORCH_FN(ascendc_path::run_tri_inv));
+  m.impl("tri_inv", TORCH_FN(pto_isa_ops::run_tri_inv));
 }
 }  // namespace

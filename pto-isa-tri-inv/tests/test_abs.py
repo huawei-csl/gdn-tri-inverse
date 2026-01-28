@@ -3,12 +3,13 @@ import op_extension
 import pytest
 
 
+@pytest.mark.parametrize("num_blocks", [1, 2, 10, 20, 32, 64])
 @pytest.mark.parametrize("dtype", [torch.float16, torch.float32], ids=str)
-def test_pto_abs(dtype: torch.dtype):
+def test_pto_abs(num_blocks: int, dtype: torch.dtype):
     # Define the tensor size
     matrix_size = 64
     tile_len = matrix_size * matrix_size
-    length = [20, tile_len]
+    length = [num_blocks, tile_len]
     # Create random input tensors on CPU with float16 data type
     x = torch.rand(length, device="cpu", dtype=dtype)
 
@@ -19,4 +20,4 @@ def test_pto_abs(dtype: torch.dtype):
     cpuout = torch.abs(x)
 
     # Validate the results
-    assert torch.allclose(output, cpuout)
+    assert torch.equal(output, cpuout)

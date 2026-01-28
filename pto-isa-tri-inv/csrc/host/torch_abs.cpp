@@ -14,20 +14,22 @@ full text of the License.
 #include "aclrtlaunch_vabs_fp32.h"
 #include "utils.h"
 
-namespace ascendc_path {
+namespace pto_isa_ops {
 
 at::Tensor run_abs(const at::Tensor& x) {
   const auto dtype = x.options().dtype();
   at::Tensor z = at::empty_like(x);
   // Define the number of blocks of vector core
-  uint32_t blockDim = 20;
-  uint32_t totalLength = x.numel();
+  const uint32_t total_len = x.numel();
+  // FIXME: fixed for now
+  const uint32_t tile_len = 64 * 64;
+  const uint32_t block_dim = total_len / tile_len;
 
   if (dtype == at::kHalf) {
-    EXEC_KERNEL_CMD(vabs_fp16, blockDim, x, z, totalLength);
+    EXEC_KERNEL_CMD(vabs_fp16, block_dim, x, z, total_len);
 
   } else if (dtype == at::kFloat) {
-    EXEC_KERNEL_CMD(vabs_fp32, blockDim, x, z, totalLength);
+    EXEC_KERNEL_CMD(vabs_fp32, block_dim, x, z, total_len);
 
   } else {
     throw std::runtime_error("Unsupported dtype for `pto_abs` kernel");
@@ -35,7 +37,7 @@ at::Tensor run_abs(const at::Tensor& x) {
 
   return z;
 }
-}  // namespace ascendc_path
+}  // namespace pto_isa_ops
 
 namespace {
 TORCH_LIBRARY_FRAGMENT(npu, m) { m.def("pto_abs(Tensor x) -> Tensor"); }
@@ -43,6 +45,6 @@ TORCH_LIBRARY_FRAGMENT(npu, m) { m.def("pto_abs(Tensor x) -> Tensor"); }
 
 namespace {
 TORCH_LIBRARY_IMPL(npu, PrivateUse1, m) {
-  m.impl("pto_abs", TORCH_FN(ascendc_path::run_abs));
+  m.impl("pto_abs", TORCH_FN(pto_isa_ops::run_abs));
 }
 }  // namespace

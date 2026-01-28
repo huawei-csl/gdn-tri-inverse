@@ -17,7 +17,7 @@ full text of the License.
 #include "torch_npu/csrc/core/npu/NPUStream.h"
 #include "torch_npu/csrc/framework/OpCommand.h"
 
-namespace ascendc_path {
+namespace pto_isa_ops {
 
 #define DEVICE_TYPE c10::DeviceType::PrivateUse1
 
@@ -63,4 +63,4 @@ constexpr auto ConvertTypes(Ts&... args) {
     };                                                                         \
     at_npu::native::OpCommand::RunOpApi(#kernel_name, acl_call);               \
   } while (false)
-}  // namespace ascendc_path
+}  // namespace pto_isa_ops
