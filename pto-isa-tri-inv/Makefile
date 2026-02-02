@@ -1,4 +1,4 @@
-.PHONY: setup_once all
+.PHONY: setup_once build test
 
 setup_once:
 	pip3 install -r requirements.txt

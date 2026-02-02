@@ -24,7 +24,7 @@ set(CMAKE_CXX_FLAGS
 
 # user-defined configuration
 set(SOC_VERSION
-    "ascend910b1"
+    "Ascend910b4"
     CACHE STRING "system on chip type")
 set(CMAKE_BUILD_TYPE
     "Debug"
@@ -39,6 +39,22 @@ elseif(DEFINED ENV{ASCEND_HOME_PATH})
       "$ENV{ASCEND_HOME_PATH}"
       CACHE PATH "ASCEND CANN package installation directory" FORCE)
 endif()
+
+set(ASCEND_DRIVER_PATH /usr/local/Ascend/driver)
+set(CMAKE_COMPILER bisheng)
+set(CMAKE_C_COMPILER ${CMAKE_COMPILER})
+set(CMAKE_CXX_COMPILER ${CMAKE_COMPILER})
+
+add_compile_options(-D_FORTIFY_SOURCE=2 -O2 -std=c++17 -Wno-macro-redefined
+                    -Wno-ignored-attributes -fstack-protector-strong)
+
+add_link_options(-s -Wl,-z,relro -Wl,-z,now)
+
+set(CMAKE_CPP_COMPILE_OPTIONS -xc++ "SHELL:-include stdint.h"
+                              "SHELL:-include stddef.h")
+
+include_directories(${ASCEND_HOME_PATH}/include
+                    ${ASCEND_DRIVER_PATH}/kernel/inc)
 
 # set PTO_LIB_PATH before running cmake, for example: export
 # PTO_LIB_PATH=[YOUR_PATH]/pto-isa
@@ -72,13 +88,16 @@ set(_OPPLUGIN_PYBIND_NAME op_extension)
 
 ascendc_library(
   no_workspace_kernel STATIC csrc/kernel/kernel_tri_inv_col_sweep.cpp
-  csrc/kernel/kernel_abs.cpp)
+  csrc/kernel/kernel_abs.cpp csrc/kernel/kernel_simple_matmul.cpp)
 
 ascendc_include_directories(no_workspace_kernel PRIVATE ${PTO_LIB_PATH}/include
                             ${PTO_LIB_PATH}/include/common)
 
 add_library(${_OPPLUGIN_PYBIND_NAME} SHARED ${_OPPLUGIN_PYBIND_OPS_SRCS})
-
+target_compile_options(
+  ${_OPPLUGIN_PYBIND_NAME}
+  PRIVATE ${CMAKE_CCE_COMPILE_OPTIONS} --cce-aicore-arch=dav-c220-cube
+          -D__DAV_C220_CUBE__ -DMEMORY_BASE -std=c++17)
 target_link_libraries(
   ${_OPPLUGIN_PYBIND_NAME}
   PRIVATE no_workspace_kernel

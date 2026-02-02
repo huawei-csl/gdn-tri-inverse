@@ -10,6 +10,8 @@ PARTICULAR PURPOSE. See LICENSE in the root of the software repository for the
 full text of the License.
 */
 
+#include <ATen/ATen.h>
+
 #include "aclrtlaunch_triv_inv_col_sweep_fp16.h"
 #include "aclrtlaunch_triv_inv_col_sweep_fp32.h"
 #include "utils.h"

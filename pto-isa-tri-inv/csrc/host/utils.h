@@ -52,7 +52,7 @@ constexpr auto ConvertTypes(Ts&... args) {
 #define EXEC_KERNEL_CMD(kernel_name, blockdim, ...)                            \
   do {                                                                         \
     auto acl_stream = c10_npu::getCurrentNPUStream().stream(false);            \
-    auto converted_params = ConvertTypes(__VA_ARGS__);                         \
+    auto converted_params = pto_isa_ops::ConvertTypes(__VA_ARGS__);                         \
     auto acl_call = [acl_stream, blockdim, converted_params]() -> int {        \
       std::apply(                                                              \
           [&](auto&&... params) {                                              \

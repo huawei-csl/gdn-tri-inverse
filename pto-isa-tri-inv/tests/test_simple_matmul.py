@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------------------
-# Copyright (c) 2025 Huawei Technologies Co., Ltd.
+# Copyright (c) 2026 Huawei Technologies Co., Ltd.
 # This program is free software, you can redistribute it and/or modify it under the terms and conditions of
 # CANN Open Software License Agreement Version 2.0 (the "License").
 # Please refer to the License for details. You may not use this file except in compliance with the License.
@@ -7,15 +7,22 @@
 # INCLUDING BUT NOT LIMITED TO NON-INFRINGEMENT, MERCHANTABILITY, OR FITNESS FOR A PARTICULAR PURPOSE.
 # See LICENSE in the root of the software repository for the full text of the License.
 # --------------------------------------------------------------------------------
-setuptools==80.9.0
-wheel
-expecttest
-pip==26.0
-pytest==8.3.4
-numpy==1.26.4
-scipy==1.13.1
-decorator==5.1.1
-psutil==6.1.0
-pybind11==2.13.6
-PyYAML==6.0.2
-attrs==24.2.0
+
+import torch
+import pytest
+import torch_npu
+import op_extension
+
+
+@pytest.mark.parametrize("matrix_size", [16, 32, 64, 96, 128])
+def test_pto_isa_simple_matmul(matrix_size: int):
+    m, k, n = matrix_size, matrix_size, matrix_size
+    a = torch.rand((m, k), device="cpu", dtype=torch.float16)
+    b = torch.rand((k, n), device="cpu", dtype=torch.float16)
+
+    a_npu = a.npu()
+    b_npu = b.npu()
+    c_npu = torch.ops.npu.simple_matmul(a_npu, b_npu)
+
+    ref = torch.matmul(a.float(), b.float())
+    assert torch.allclose(c_npu.cpu(), ref)
