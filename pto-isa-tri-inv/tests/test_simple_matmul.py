@@ -15,10 +15,11 @@ import op_extension
 
 
 @pytest.mark.parametrize("matrix_size", [16, 32, 64, 96, 128])
-def test_pto_isa_simple_matmul(matrix_size: int):
+@pytest.mark.parametrize("dtype", [torch.float16, torch.float32], ids=str)
+def test_pto_isa_simple_matmul(matrix_size: int, dtype: torch.dtype):
     m, k, n = matrix_size, matrix_size, matrix_size
-    a = torch.rand((m, k), device="cpu", dtype=torch.float16)
-    b = torch.rand((k, n), device="cpu", dtype=torch.float16)
+    a = torch.rand((m, k), device="cpu", dtype=dtype)
+    b = torch.rand((k, n), device="cpu", dtype=dtype)
 
     a_npu = a.npu()
     b_npu = b.npu()

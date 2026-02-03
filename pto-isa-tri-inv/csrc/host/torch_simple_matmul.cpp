@@ -11,6 +11,7 @@ full text of the License.
 */
 
 #include "aclrtlaunch_simple_matmul_fp16.h"
+#include "aclrtlaunch_simple_matmul_fp32.h"
 #include "utils.h"
 
 namespace pto_isa_ops {
@@ -20,9 +21,9 @@ at::Tensor run_simple_matmul(const at::Tensor& a, const at::Tensor& b) {
   const auto dtype = a.options().dtype();
   const auto dtype_out = at::kFloat;
 
-  if (dtype != at::kHalf) {
+  if (!(dtype == at::kHalf or dtype == at::kFloat)) {
     throw std::runtime_error(
-        "Unsupported dtype for simple_matmul kernel");
+        "Unsupported dtype for simple_matmul kernel. Supports only fp16/fp32");
   }
 
   const uint32_t matrix_size = static_cast<uint32_t>(a.size(-1));
@@ -36,7 +37,11 @@ at::Tensor run_simple_matmul(const at::Tensor& a, const at::Tensor& b) {
       at::ones({matrix_size, matrix_size},
                at::TensorOptions().dtype(dtype_out).device(device));
 
-  EXEC_KERNEL_CMD(simple_matmul_fp16, block_dim, a, b, c, matrix_size);
+  if (dtype == at::kHalf) {
+    EXEC_KERNEL_CMD(simple_matmul_fp16, block_dim, a, b, c, matrix_size);
+  } else if (dtype == at::kFloat) {
+    EXEC_KERNEL_CMD(simple_matmul_fp32, block_dim, a, b, c, matrix_size);
+  }
 
   return c;
 }

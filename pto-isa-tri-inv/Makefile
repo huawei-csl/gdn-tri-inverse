@@ -11,4 +11,4 @@ build:
 
 
 test:
-	pytest -v tests/test_add_custom.py
+	pytest -v tests/

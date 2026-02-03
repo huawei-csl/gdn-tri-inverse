@@ -16,9 +16,14 @@ full text of the License.
 #define MEMORY_BASE
 #include <pto/common/type.hpp>
 
-#include "kernel_operator.h"
-extern "C" __global__ AICORE void simple_matmul_fp16(GM_ADDR a, GM_ADDR b,
-                                                     GM_ADDR c,
+extern "C" __global__ AICORE void simple_matmul_fp16(__gm__ void* a,
+                                                     __gm__ void* b,
+                                                     __gm__ void* c,
+                                                     uint32_t matrix_size) {}
+
+extern "C" __global__ AICORE void simple_matmul_fp32(__gm__ void* a,
+                                                     __gm__ void* b,
+                                                     __gm__ void* c,
                                                      uint32_t matrix_size) {}
 
 #elif (__CHECK_FEATURE_AT_PRECOMPILE) || \
@@ -117,34 +122,48 @@ AICORE void runKernelSimpleMatMul(__gm__ InputT* a, __gm__ InputT* b,
   TSTORE(c_global_out, c_l0_tile);
 }
 
-extern "C" __global__ AICORE void simple_matmul_fp16(GM_ADDR a, GM_ADDR b,
-                                                     GM_ADDR c,
-                                                     uint32_t matrix_size) {
+template <typename T>
+AICORE void run_simple_matmul(__gm__ T* a, __gm__ T* b, __gm__ float* c,
+                              uint32_t matrix_size) {
+  static_assert(std::is_same_v<T, half> or std::is_same_v<T, float>,
+                "simple_matmul supports only fp16/fp32.");
+
   switch (matrix_size) {
     case 16:
-      runKernelSimpleMatMul<half, float, 16>((__gm__ half*)a, (__gm__ half*)b,
-                                             (__gm__ float*)c);
+      runKernelSimpleMatMul<T, float, 16>(a, b, c);
       break;
     case 32:
-      runKernelSimpleMatMul<half, float, 32>((__gm__ half*)a, (__gm__ half*)b,
-                                             (__gm__ float*)c);
+      runKernelSimpleMatMul<T, float, 32>(a, b, c);
       break;
 
     case 64:
-      runKernelSimpleMatMul<half, float, 64>((__gm__ half*)a, (__gm__ half*)b,
-                                             (__gm__ float*)c);
+      runKernelSimpleMatMul<T, float, 64>(a, b, c);
       break;
 
     case 96:
-      runKernelSimpleMatMul<half, float, 96>((__gm__ half*)a, (__gm__ half*)b,
-                                             (__gm__ float*)c);
+      runKernelSimpleMatMul<T, float, 96>(a, b, c);
       break;
 
     case 128:
-      runKernelSimpleMatMul<half, float, 128>((__gm__ half*)a, (__gm__ half*)b,
-                                              (__gm__ float*)c);
+      runKernelSimpleMatMul<T, float, 128>(a, b, c);
       break;
   }
+}
+
+extern "C" __global__ AICORE void simple_matmul_fp16(__gm__ void* a,
+                                                     __gm__ void* b,
+                                                     __gm__ void* c,
+                                                     uint32_t matrix_size) {
+  run_simple_matmul<half>((__gm__ half*)a, (__gm__ half*)b, (__gm__ float*)c,
+                          matrix_size);
+}
+
+extern "C" __global__ AICORE void simple_matmul_fp32(__gm__ void* a,
+                                                     __gm__ void* b,
+                                                     __gm__ void* c,
+                                                     uint32_t matrix_size) {
+  run_simple_matmul<float>((__gm__ float*)a, (__gm__ float*)b, (__gm__ float*)c,
+                           matrix_size);
 }
 
 #endif
