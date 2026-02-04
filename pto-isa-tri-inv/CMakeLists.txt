@@ -12,7 +12,7 @@
 # --------------------------------------------------------------------------------
 
 cmake_minimum_required(VERSION 3.16.0)
-project(PTO)
+project(pto-isa-kernels)
 set(LINUX TRUE)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_STANDARD 11)
@@ -82,27 +82,25 @@ include(${ASCENDC_CMAKE_DIR}/ascendc.cmake)
 
 # ascendc_library use to add kernel file to generate ascendc library
 
-file(GLOB _OPPLUGIN_PYBIND_OPS_SRCS csrc/host/*.cpp)
-
-set(_OPPLUGIN_PYBIND_NAME op_extension)
+file(GLOB _OPPLUGIN_PYBIND_OPS_SRCS csrc/host/torch_abs.cpp
+     csrc/host/torch_*.cpp)
 
 ascendc_library(
   no_workspace_kernel STATIC csrc/kernel/kernel_tri_inv_col_sweep.cpp
-  csrc/kernel/kernel_abs.cpp csrc/kernel/kernel_simple_matmul.cpp 
+  csrc/kernel/kernel_abs.cpp csrc/kernel/kernel_simple_matmul.cpp
   csrc/kernel/kernel_batch_matrix_square.cpp)
 
 ascendc_include_directories(no_workspace_kernel PRIVATE ${PTO_LIB_PATH}/include
                             ${PTO_LIB_PATH}/include/common)
 
-add_library(${_OPPLUGIN_PYBIND_NAME} SHARED ${_OPPLUGIN_PYBIND_OPS_SRCS})
+add_library(pto_isa_kernels SHARED ${_OPPLUGIN_PYBIND_OPS_SRCS})
+# FIXME(anastasios): -DMEMORY_BASE is only valid for A2A3 devices
 target_compile_options(
-  ${_OPPLUGIN_PYBIND_NAME}
-  PRIVATE ${CMAKE_CCE_COMPILE_OPTIONS} --cce-aicore-arch=dav-c220-cube
-          # -D__DAV_C220_CUBE__ 
-          -DMEMORY_BASE 
-          -std=c++17)
+  pto_isa_kernels PRIVATE ${CMAKE_CCE_COMPILE_OPTIONS}
+                          --cce-aicore-arch=dav-2201 -std=c++17)
+
 target_link_libraries(
-  ${_OPPLUGIN_PYBIND_NAME}
+  pto_isa_kernels
   PRIVATE no_workspace_kernel
           torch_npu
           ascendcl
@@ -112,10 +110,9 @@ target_link_libraries(
           ascendalog
           dl)
 
-target_link_directories(${_OPPLUGIN_PYBIND_NAME} PRIVATE ${TORCH_PATH}/lib
+target_link_directories(pto_isa_kernels PRIVATE ${TORCH_PATH}/lib
                         ${TORCH_NPU_PATH}/lib)
 
 target_include_directories(
-  ${_OPPLUGIN_PYBIND_NAME}
-  PRIVATE ${TORCH_NPU_PATH}/include ${TORCH_PATH}/include
-          ${TORCH_PATH}/include/torch/csrc/api/include)
+  pto_isa_kernels PRIVATE ${TORCH_NPU_PATH}/include ${TORCH_PATH}/include
+                          ${TORCH_PATH}/include/torch/csrc/api/include)

@@ -12,17 +12,16 @@
 AARCH=$(uname -i)
 PY_VER=$(python3 -c 'import sysconfig; print(sysconfig.get_config_var("SOABI").split("-")[1])')
 
-set -e 
+set -e
 export ASCEND_HOME_PATH=/usr/local/Ascend/
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # specify your path to pto-isa or use ``make setup_once`
 export PTO_LIB_PATH="$(pwd)/PTO_ISA_ROOT"
 
-rm -fr build op_extension.egg-info
-python3 setup.py bdist_wheel 
+rm -fr build pto_isa_kernels.egg-info
+python3 setup.py bdist_wheel
 
 pushd dist || exit 1
-python3 -m pip install --force-reinstall "op_extension-0.0.0-cp${PY_VER}-cp${PY_VER}-linux_${AARCH}.whl"
+python3 -m pip install --force-reinstall "pto_isa_kernels-0.1.0-cp${PY_VER}-cp${PY_VER}-linux_${AARCH}.whl"
 popd
-

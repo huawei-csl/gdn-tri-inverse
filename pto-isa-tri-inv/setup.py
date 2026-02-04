@@ -29,7 +29,6 @@ BUILD_PERMISSION = (
     stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR | stat.S_IRGRP | stat.S_IXGRP
 )
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-VERSION = "op-extension"
 
 
 def which(thefile):
@@ -77,7 +76,7 @@ class CPPLibBuild(build_clib, object):
         self.cmake = cmake
         build_py = self.get_finalized_command("build_py")
         extension_dir = os.path.join(
-            BASE_DIR, build_py.build_lib, build_py.get_package_dir("op_extension")
+            BASE_DIR, build_py.build_lib, build_py.get_package_dir("pto_isa_kernels")
         )
 
         build_dir = os.path.join(BASE_DIR, "build")
@@ -131,7 +130,7 @@ class Build(build_ext, object):
 
 
 setup(
-    name="op_extension",
+    name="pto_isa_kernels",
     description="NPU bridge for Torchvision",
     packages=find_packages(),
     ext_modules=[NpuExtension("op_extension._C", sources=[])],
@@ -139,4 +138,5 @@ setup(
         "build_clib": CPPLibBuild,
         "build_ext": Build,
     },
+    version="0.1.0",
 )

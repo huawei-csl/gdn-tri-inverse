@@ -20,5 +20,5 @@ import torch_npu
 def _load_opextension_so():
     npu_path = pathlib.Path(__file__).parents[0]
     print(f"npu_path: {npu_path}")
-    atb_so_path = os.path.join(npu_path, "..", "build", "lib", "libop_extension.so")
+    atb_so_path = os.path.join(npu_path, "..", "build", "lib", "libpto_isa_kernels.so")
     torch.ops.load_library(atb_so_path)

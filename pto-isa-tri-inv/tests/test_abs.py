@@ -1,5 +1,5 @@
 import torch
-import op_extension
+import pto_isa_kernels
 import pytest
 
 

@@ -11,7 +11,7 @@
 import torch
 import pytest
 import torch_npu
-import op_extension
+import pto_isa_kernels
 
 
 @pytest.mark.parametrize("matrix_size", [16, 32, 64, 96, 128])
