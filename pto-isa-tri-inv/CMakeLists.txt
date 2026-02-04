@@ -88,7 +88,8 @@ set(_OPPLUGIN_PYBIND_NAME op_extension)
 
 ascendc_library(
   no_workspace_kernel STATIC csrc/kernel/kernel_tri_inv_col_sweep.cpp
-  csrc/kernel/kernel_abs.cpp csrc/kernel/kernel_simple_matmul.cpp)
+  csrc/kernel/kernel_abs.cpp csrc/kernel/kernel_simple_matmul.cpp 
+  csrc/kernel/kernel_batch_matrix_square.cpp)
 
 ascendc_include_directories(no_workspace_kernel PRIVATE ${PTO_LIB_PATH}/include
                             ${PTO_LIB_PATH}/include/common)
@@ -97,7 +98,9 @@ add_library(${_OPPLUGIN_PYBIND_NAME} SHARED ${_OPPLUGIN_PYBIND_OPS_SRCS})
 target_compile_options(
   ${_OPPLUGIN_PYBIND_NAME}
   PRIVATE ${CMAKE_CCE_COMPILE_OPTIONS} --cce-aicore-arch=dav-c220-cube
-          -D__DAV_C220_CUBE__ -DMEMORY_BASE -std=c++17)
+          # -D__DAV_C220_CUBE__ 
+          -DMEMORY_BASE 
+          -std=c++17)
 target_link_libraries(
   ${_OPPLUGIN_PYBIND_NAME}
   PRIVATE no_workspace_kernel

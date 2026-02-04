@@ -95,3 +95,14 @@ run_pto_isa_simple_matmul_kernel:
     - pip install -U setuptools packaging
     - bash run.sh
     - python3 -m pytest -v tests/test_simple_matmul.py
+
+run_pto_isa_batch_matrix_square_kernel:
+  <<: *build_config
+  stage: build
+  script:
+    - cd pto-isa-tri-inv/
+    - pip3 install -r requirements.txt
+    - git clone https://gitcode.com/cann/pto-isa.git PTO_ISA_ROOT
+    - pip install -U setuptools packaging
+    - bash run.sh
+    - python3 -m pytest -v tests/test_batch_matrix_square.py
