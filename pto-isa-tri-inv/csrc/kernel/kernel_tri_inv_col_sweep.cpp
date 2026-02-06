@@ -83,71 +83,50 @@ AICORE void runTTriInv(__gm__ T* vec_in, __gm__ T* vec_out,
   set_flag(PIPE_MTE2, PIPE_V, EVENT_ID0);
   wait_flag(PIPE_MTE2, PIPE_V, EVENT_ID0);
 
+  TileVecData x(1, S);
+  // TODO (anastasios) only first k elements must be updated
+  TileVecData diff(1, S);
+  TASSIGN(diff, UB_ZERO_ADDR + matrix_in_size + b_size);
+  TileVecData A_k(1, S);
+
   // For every output column j-th
   for (int32_t j = 0; j < S; j++) {
     // Column sweep on each column.
 
     // `b` vector is  j-th standard vector (e_j).
-    set_flag(PIPE_S, PIPE_V, EVENT_ID0);
-    wait_flag(PIPE_S, PIPE_V, EVENT_ID0);
     TEXPANDS(b, static_cast<T>(0));
     set_flag(PIPE_V, PIPE_S, EVENT_ID0);
     wait_flag(PIPE_V, PIPE_S, EVENT_ID0);
     b.SetValue(j, static_cast<T>(1));
-    set_flag(PIPE_S, PIPE_V, EVENT_ID0);
-    wait_flag(PIPE_S, PIPE_V, EVENT_ID0);
 
     // Solve A x = e_j for vector x
-    TileVecData x(1, S);
     // Must be offset by UB address
     TASSIGN(x, out_start_ub_addr + j * S * sizeof(T));
 
     for (int32_t k = S - 1; k >= 0; k--) {
-      TileVecData A_k(1, S);
       TASSIGN(A_k, k * S * sizeof(T));
-
-      // 'diff' has length k since only first k elements must be updated
-      TileVecData diff(1, S);
-      TASSIGN(diff, UB_ZERO_ADDR + matrix_in_size + b_size);
 
       set_flag(PIPE_V, PIPE_S, EVENT_ID0);
       wait_flag(PIPE_V, PIPE_S, EVENT_ID0);
       // x[k] = b[k] / A[k, k]
       const T alpha = b.GetValue(k);
       x.SetValue(k, alpha);
-      set_flag(PIPE_S, PIPE_V, EVENT_ID0);
-      wait_flag(PIPE_S, PIPE_V, EVENT_ID0);
 
       if (k > 0) {
         // b[:k] -= A[:k, k] * x[k]
-
         TEXPANDS(diff, static_cast<T>(0));
-        set_flag(PIPE_S, PIPE_V, EVENT_ID0);
-        wait_flag(PIPE_S, PIPE_V, EVENT_ID0);
-        set_flag(PIPE_V, PIPE_S, EVENT_ID0);
-        wait_flag(PIPE_V, PIPE_S, EVENT_ID0);
-
         TMULS(diff, A_k, alpha);
-        set_flag(PIPE_S, PIPE_V, EVENT_ID0);
-        wait_flag(PIPE_S, PIPE_V, EVENT_ID0);
         set_flag(PIPE_V, PIPE_S, EVENT_ID0);
         wait_flag(PIPE_V, PIPE_S, EVENT_ID0);
 
         TSUB(b, b, diff);
-        set_flag(PIPE_V, PIPE_S, EVENT_ID0);
-        wait_flag(PIPE_V, PIPE_S, EVENT_ID0);
-        set_flag(PIPE_S, PIPE_V, EVENT_ID0);
-        wait_flag(PIPE_S, PIPE_V, EVENT_ID0);
       }
     }
   }
 
   set_flag(PIPE_V, PIPE_MTE3, EVENT_ID0);
   wait_flag(PIPE_V, PIPE_MTE3, EVENT_ID0);
-  // store data from UB buffer to global memory
   TSTORE(global_out, inv_matrix_out);
-  set_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
-  wait_flag(PIPE_MTE3, PIPE_V, EVENT_ID0);
 }
 
 extern "C" __global__ AICORE void triv_inv_col_sweep_fp16(
