@@ -88,7 +88,8 @@ file(GLOB _OPPLUGIN_PYBIND_OPS_SRCS csrc/host/torch_abs.cpp
 ascendc_library(
   no_workspace_kernel STATIC csrc/kernel/kernel_tri_inv_col_sweep.cpp
   csrc/kernel/kernel_abs.cpp csrc/kernel/kernel_simple_matmul.cpp
-  csrc/kernel/kernel_batch_matrix_square.cpp)
+  csrc/kernel/kernel_batch_matrix_square.cpp csrc/kernel/kernel_tri_inv_trick.cpp)
+
 
 ascendc_include_directories(no_workspace_kernel PRIVATE ${PTO_LIB_PATH}/include
                             ${PTO_LIB_PATH}/include/common)
