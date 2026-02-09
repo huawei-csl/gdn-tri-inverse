@@ -3,9 +3,15 @@
 import pytest
 from torch.testing import assert_close
 import torch
-import torch_npu  # noqa
+import torch.nn.functional as torch_func
+import torch_npu
 
-from gdn_tri_inverse.linalg import tri_inv_qwen3_next_default, tri_inv_vcs, tri_inv_mxr
+from gdn_tri_inverse.linalg import (
+    tri_inv_qwen3_next_default,
+    tri_inv_vcs,
+    tri_inv_mxr,
+    tri_inv_mcs,
+)
 
 device = "npu:0"  # pick an available device
 
@@ -20,9 +26,10 @@ def gen_random_matrix(shape, dtype):
 @pytest.mark.parametrize(
     "tri_inv_fn,dtype,atol,rtol",
     [
-        (tri_inv_mxr, torch.float16, 1e-5, 1e-2),
         (tri_inv_vcs, torch.float16, 1e-5, 1e-2),
         (tri_inv_vcs, torch.float32, 1e-8, 5e-5),
+        (tri_inv_mcs, torch.float16, 1e-5, 1e-2),
+        (tri_inv_mxr, torch.float16, 1e-5, 1e-2),
         (tri_inv_qwen3_next_default, torch.float16, 1e-5, 1e-2),
         (tri_inv_qwen3_next_default, torch.float32, 1e-8, 5e-5),
     ],

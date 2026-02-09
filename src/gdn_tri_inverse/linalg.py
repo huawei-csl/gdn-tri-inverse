@@ -1,5 +1,10 @@
 import torch
-from tcuscan import run_tri_inv_col_sweep, run_triu_inv_rec_unroll  # noqa
+from typing import Optional
+from tcuscan import (
+    run_tri_inv_col_sweep,
+    run_triu_inv_rec_unroll,
+    run_tri_inv_cube_col_sweep,
+)
 
 
 def inv_tril_inplace(A: torch.Tensor):
@@ -38,6 +43,17 @@ def tri_inv_vcs(A: torch.Tensor) -> torch.Tensor:
     n = A.shape[-1]
     A_view = A.view(-1, n, n)
     A_inv = run_tri_inv_col_sweep(A_view)
+    return A_inv.reshape(A.shape)
+
+
+def tri_inv_mcs(A: torch.Tensor) -> torch.Tensor:
+    """
+    MCS stands for Matrix Column Sweep. The algorithm uses internally
+    vector (AIV) and cube units (AIC).
+    """
+    n = A.shape[-1]
+    A_view = A.view(-1, n, n)
+    A_inv = run_tri_inv_cube_col_sweep(A_view)
     return A_inv.reshape(A.shape)
 
 
