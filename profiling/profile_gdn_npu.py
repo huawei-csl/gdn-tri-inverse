@@ -1,13 +1,19 @@
 import torch
 import torch.nn.functional as F
 import torch_npu  # noqa
-import tcuscan
 import argparse
 import typing
+import os
 
 
 from gdn_tri_inverse.core import chunk_gated_delta_rule_ref
-from gdn_tri_inverse.linalg import inv_tril_inplace, tri_inv_vcs
+from gdn_tri_inverse.linalg import (
+    inv_tril_inplace,
+    tri_inv_vcs,
+    tri_inv_mcs,
+    tri_inv_mxr,
+    tri_inv_triton,
+)
 from utils import Device, run_torch_profiler, run_benchmark
 
 NPU_DEVICE = "npu:0"
@@ -17,8 +23,9 @@ device = Device(torch.npu, NPU_DEVICE)
 INV_FNS_ = {
     "baseline": inv_tril_inplace,
     "column-sweep": tri_inv_vcs,
-    "cube-column-sweep": tcuscan.run_tri_inv_cube_col_sweep,
-    "cube-rec-unroll": tcuscan.run_triu_inv_rec_unroll,
+    "cube-column-sweep": tri_inv_mcs,
+    "cube-rec-unroll": tri_inv_mxr,
+    "triton": tri_inv_triton,
 }
 
 

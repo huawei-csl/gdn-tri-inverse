@@ -5,6 +5,7 @@ from tcuscan import (
     run_triu_inv_rec_unroll,
     run_tri_inv_cube_col_sweep,
 )
+from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
 
 
 def inv_tril_inplace(A: torch.Tensor):
@@ -67,3 +68,25 @@ def tri_inv_mxr(A: torch.Tensor) -> torch.Tensor:
     A_view = A.view(-1, n, n)
     A_inv = run_triu_inv_rec_unroll(A_view)
     return A_inv.reshape(A.shape)
+
+
+def tri_inv_triton(A: torch.Tensor):
+    """
+    Wrapper to the triton version of the triangular inverse from:
+    https://github.com/sgl-project/sgl-kernel-npu/blob/main/python/sgl_kernel_npu/sgl_kernel_npu/fla/solve_tril.py
+
+    The original triton version is adapted to the GDN layout and it expects the following format:
+        [B, T, H, BT]
+    Where:
+        B and H are batch dimensions (respectively batch size and number of attention heads)
+        BT is the chunk size, representing the size of the matrix
+        T is the sequence length that is sliced into chunks of size BT (already padded)
+
+    The wrapper taskes as an input a tensor of shape [*, BT, BT]
+    """
+    BT = A.shape[-1]
+    B = 1 if A.dim() == 2 else A.numel() // (BT * BT)
+    A_view = A.view(-1, BT, BT)
+    A_view = A_view.reshape(1, 1, B * BT, BT).transpose(1, 2).contiguous()
+    A_inv = solve_tril_npu(A_view)
+    return A_inv.transpose(1, 2).reshape(B, BT, BT)
