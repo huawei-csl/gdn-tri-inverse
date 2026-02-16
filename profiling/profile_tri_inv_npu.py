@@ -15,11 +15,11 @@ import sys
 
 import torch
 import torch.nn.functional as F
-from sgl_kernel_npu.fla.solve_tril import solve_tril_npu as solve_tril
 from sgl_kernel_npu.fla.chunk import inv_tril_inplace
 from tcuscan import run_tri_inv_cube_col_sweep
 
-from pto_kernels import pto_tri_inv, pto_tri_inv_trick, pto_tri_inv_rec_unroll
+from pto_kernels import pto_tri_inv, pto_tri_inv_rec_unroll
+from gdn_tri_inverse.linalg import tri_inv_triton
 
 from utils import Device, run_benchmark
 from functools import partial
@@ -52,7 +52,7 @@ def tri_inv_rec_unroll_wrapper(A, chunk_size: int):
 # Map "triangular inverse method name" to Python function with signature fn(A) -> A^{-1}.
 TRIANGULAR_INVERSE_METHODS_ = {
     "torch_eager": inv_tril_inplace,
-    "triton": solve_tril,
+    "triton": tri_inv_triton,
     "ascendc_tri_inv_col_sweep": torch.ops.npu.triangular_inverse,
     "pto_tri_inv_col_sweep": pto_tri_inv,
     "tcuscan_tri_inv_cube_col_sweep": run_tri_inv_cube_col_sweep,
