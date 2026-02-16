@@ -71,9 +71,25 @@ test_tri_inv_methods_on_sgl_kernels_npu:
     - python3 -m pytest -v tests/sgl_kernels_npu
 
 
-tri_inv_methods:
+test_tri_inv_methods:
   <<: *build_config
   stage: test
   script:
     - pip3 install -v .
     - python3 -m pytest -v tests/test_linalg.py
+
+
+profile_tri_inv:
+  <<: *build_config
+  stage: test
+  script:
+    - pip3 install -v .
+    - make profile_tri_inv
+  artifacts:
+    expire_in: 1 hours
+    paths:
+      - bench_results_solve_tril*.csv
+      - benchmark_tri_inv.log
+      - profiling/nbs/figs/*.png
+  when: manual
+  allow_failure: true

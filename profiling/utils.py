@@ -52,7 +52,7 @@ def run_benchmark(
         benchmark_iters: Number of benchmark runs.
 
     Returns:
-        Average time in microseconds.
+        Average time in milliseconds.
     """
     torch.npu.set_device(device.id())
 
@@ -81,8 +81,8 @@ def run_benchmark(
         fn()
         end_events[i].record()
         device.sync()
-        elapsed_time_ms = int(start_events[i].elapsed_time(end_events[i]))
-        logger.info(f"Elapsed time: {elapsed_time_ms:,} ms")
+        elapsed_time_ms = start_events[i].elapsed_time(end_events[i])
+        logger.info(f"Elapsed time: {elapsed_time_ms:.5} ms")
         yield elapsed_time_ms
 
 

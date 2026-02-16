@@ -5,3 +5,5 @@
 **/*.egg-info/
 **/output/
 *.csv
+*.log
+*.png
