@@ -42,13 +42,6 @@ NPU_DEVICE = "npu:1"
 device = Device(torch.npu, NPU_DEVICE)
 
 
-def tri_inv_rec_unroll_wrapper(A, chunk_size: int):
-    # HACK to overcome the isuse: "RuntimeError: Input tensor must have at exactly 3 dimensions."
-    return pto_tri_inv_rec_unroll(A.reshape(-1, chunk_size, chunk_size)).reshape(
-        A.shape
-    )
-
-
 # Map "triangular inverse method name" to Python function with signature fn(A) -> A^{-1}.
 TRIANGULAR_INVERSE_METHODS_ = {
     "torch_eager": inv_tril_inplace,
@@ -56,7 +49,7 @@ TRIANGULAR_INVERSE_METHODS_ = {
     "ascendc_tri_inv_col_sweep": torch.ops.npu.triangular_inverse,
     "pto_tri_inv_col_sweep": pto_tri_inv,
     "tcuscan_tri_inv_cube_col_sweep": run_tri_inv_cube_col_sweep,
-    "pto_tri_inv_rec_unroll": tri_inv_rec_unroll_wrapper,
+    "pto_tri_inv_rec_unroll": pto_tri_inv_rec_unroll,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
 }
 
@@ -73,10 +66,7 @@ def profile_solve_tril(
 ):
     torch.manual_seed(42)
 
-    if inverse_type == "pto_tri_inv_rec_unroll":
-        inv_fn = partial(tri_inv_rec_unroll_wrapper, chunk_size=chunk_size)
-    else:
-        inv_fn = TRIANGULAR_INVERSE_METHODS_[inverse_type]
+    inv_fn = TRIANGULAR_INVERSE_METHODS_[inverse_type]
 
     # do not randomly initialize A otherwise the inverse is not stable
     k = F.normalize(
