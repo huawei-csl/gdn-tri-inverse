@@ -8,7 +8,7 @@ import os
 
 from gdn_tri_inverse.core import chunk_gated_delta_rule_ref
 from gdn_tri_inverse.linalg import (
-    inv_tril_inplace,
+    tri_inv_qwen3_next_default,
     tri_inv_vcs,
     tri_inv_mcs,
     tri_inv_mxr,
@@ -21,7 +21,7 @@ device = Device(torch.npu, NPU_DEVICE)
 
 
 INV_FNS_ = {
-    "baseline": inv_tril_inplace,
+    "torch-eager": tri_inv_qwen3_next_default,
     "column-sweep": tri_inv_vcs,
     "cube-column-sweep": tri_inv_mcs,
     "cube-rec-unroll": tri_inv_mxr,

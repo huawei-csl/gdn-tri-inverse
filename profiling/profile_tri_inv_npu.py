@@ -4,9 +4,9 @@ Docstring for benchmark.bench_solve_tril
 Profiling script that compares various solve_tril methods. Currently, profiles:
 1. `torch_eager`: This is the vanilla PyTorch eager mode forward substitution method.
 2. `triton`: Triton-ascend method
-3. `ascendc_tri_inv_col_sweep`: Vector-only column sweep method written in AscendC.
-4. `pto_tri_inv_col_sweep`: Vector-only column sweep method written in pto-isa.
-5. `pto_tri_inv_rec_unroll`: Cube optimized inverse
+3. `column_sweep`: Vector-only column sweep method written in pto-isa.
+4. `cube_column_sweep`: CUbe column sweep method written in AscendC.
+5. `cube_rec_unroll`: Cube optimized inverse
 """
 
 import argparse
@@ -15,11 +15,14 @@ import sys
 
 import torch
 import torch.nn.functional as F
-from sgl_kernel_npu.fla.chunk import inv_tril_inplace
-from tcuscan import run_tri_inv_cube_col_sweep
 
-from pto_kernels import pto_tri_inv, pto_tri_inv_rec_unroll
-from gdn_tri_inverse.linalg import tri_inv_triton
+from gdn_tri_inverse.linalg import (
+    tri_inv_qwen3_next_default,
+    tri_inv_vcs,
+    tri_inv_mcs,
+    tri_inv_mxr,
+    tri_inv_triton,
+)
 
 from utils import Device, run_benchmark
 from functools import partial
@@ -44,12 +47,11 @@ device = Device(torch.npu, NPU_DEVICE)
 
 # Map "triangular inverse method name" to Python function with signature fn(A) -> A^{-1}.
 TRIANGULAR_INVERSE_METHODS_ = {
-    "torch_eager": inv_tril_inplace,
+    "torch-eager": tri_inv_qwen3_next_default,
     "triton": tri_inv_triton,
-    "ascendc_tri_inv_col_sweep": torch.ops.npu.triangular_inverse,
-    "pto_tri_inv_col_sweep": pto_tri_inv,
-    "tcuscan_tri_inv_cube_col_sweep": run_tri_inv_cube_col_sweep,
-    "pto_tri_inv_rec_unroll": pto_tri_inv_rec_unroll,
+    "column-sweep": tri_inv_vcs,
+    "cube-column-sweep": tri_inv_mcs,
+    "cube-rec-unroll": tri_inv_mxr,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
 }
 

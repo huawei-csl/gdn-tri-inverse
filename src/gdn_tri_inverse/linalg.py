@@ -1,11 +1,8 @@
 import torch
 from typing import Optional
-from tcuscan import (
-    run_tri_inv_col_sweep,
-    run_triu_inv_rec_unroll,
-    run_tri_inv_cube_col_sweep,
-)
+from tcuscan import run_tri_inv_cube_col_sweep
 from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
+from pto_kernels import pto_tri_inv, pto_tri_inv_rec_unroll
 
 
 def inv_tril_inplace(A: torch.Tensor):
@@ -43,7 +40,7 @@ def tri_inv_vcs(A: torch.Tensor) -> torch.Tensor:
     """
     n = A.shape[-1]
     A_view = A.view(-1, n, n)
-    A_inv = run_tri_inv_col_sweep(A_view)
+    A_inv = pto_tri_inv(A_view)
     return A_inv.reshape(A.shape)
 
 
@@ -63,10 +60,11 @@ def tri_inv_mxr(A: torch.Tensor) -> torch.Tensor:
     The individual matrices of the tensor A must be strictly
     upper triangular. The algorithm implements a matmul-based mixed
     recursive strategy (hence the MXR acronym) to compute the inverses.
+    Accepts fp16 as input and produces fp32 as output.
     """
     n = A.shape[-1]
     A_view = A.view(-1, n, n)
-    A_inv = run_triu_inv_rec_unroll(A_view)
+    A_inv = pto_tri_inv_rec_unroll(A_view)
     return A_inv.reshape(A.shape)
 
 
