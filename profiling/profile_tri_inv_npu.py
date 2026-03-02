@@ -61,7 +61,6 @@ def profile_solve_tril(
     B: int,
     T: int,
     H: int,
-    D: int,
     chunk_size: int = 64,
     dtype: torch.dtype = torch.float16,
     inverse_type: str = "baseline",
@@ -101,7 +100,7 @@ def profile_solve_tril(
     avg_time_ms = sum(times_ms) / len(times_ms)
     avg_time_us = int(avg_time_ms * 1000)
     with open(filename, "a", encoding="UTF-8") as fd:
-        line = f"{inverse_type},fp16,{B},{T},{H},{D},{numel},{chunk_size},{avg_time_us}"
+        line = f"{inverse_type},fp16,{B},{T},{H},{numel},{chunk_size},{avg_time_us}"
         fd.write(f"{line}\n")
 
 
@@ -109,9 +108,8 @@ if __name__ == "__main__":  # noqa
     parser = argparse.ArgumentParser(description="Triangular inverse benchmarking")
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=20)
-    parser.add_argument("--T", type=int, default=500)
+    parser.add_argument("--B", type=int, default=32)
     parser.add_argument("--H", type=int, default=4)
-    parser.add_argument("--D", type=int, default=32)
     parser.add_argument("--chunk-size", type=int, default=64)
     args = parser.parse_args()
 
@@ -120,14 +118,12 @@ if __name__ == "__main__":  # noqa
 
     filename = f"bench_results_solve_tril_{chunk_size}.csv"
     with open(filename, "w", encoding="UTF-8") as fd:
-        fd.write("inverse_type,dtype,B,T,H,D,numel,chunk_size,time_us\n")
+        fd.write("inverse_type,dtype,B,T,H,numel,chunk_size,time_us\n")
 
     for inverse_type in TRIANGULAR_INVERSE_METHODS_.keys():
-        for B in [2, 5, 10, 15, 20, 25, 30, 40, 50]:
-            T, H, D = args.T, args.H, args.D
-            logger.info(
-                f"Profiling case: {inverse_type},{dtype},{B},{T},{H},{D},{chunk_size}"
-            )
+        for T in [512, 1024, 2048, 4096, 8192, 16384]:
+            B, H = args.B, args.H
+            logger.info(f"Profiling case: {inverse_type},{B},{T},{H},{chunk_size}")
 
             # Triton does not support chunk_size = 128
             if inverse_type == "triton" and chunk_size == 128:
@@ -137,7 +133,6 @@ if __name__ == "__main__":  # noqa
                 B=B,
                 T=T,
                 H=H,
-                D=D,
                 chunk_size=chunk_size,
                 inverse_type=inverse_type,
             )
