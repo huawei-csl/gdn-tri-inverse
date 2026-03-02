@@ -15,10 +15,9 @@ dependencies = [
   "PyYAML==6.0.2",
   "attrs==24.2.0",
   "einops==0.8.1",
-  "torch @ https://download.pytorch.org/whl/cpu/torch-2.8.0%2Bcpu-cp310-cp310-manylinux_2_28_x86_64.whl#sha256=16d75fa4e96ea28a785dfd66083ca55eb1058b6d6c5413f01656ca965ee2077e",
-  "torch_npu @ https://gitcode.com/Ascend/pytorch/releases/download/v7.3.0-pytorch2.8.0/torch_npu-2.8.0.post2-cp310-cp310-manylinux_2_28_x86_64.whl",
+  "torch-npu==2.8.0.post2",
   "tcuscan @ file:///scratch/TCUSCAN/tcuscan-0.1.0-cp310-cp310-linux_x86_64.whl",
-  "pto_kernels @ file:///scratch/TCUSCAN/pto_kernels-0.1.0-cp310-cp310-linux_x86_64.whl",
+  "pto_kernels @ git+ssh://git@ssh.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/pto-kernels.git",
   "sgl-kernel-npu @ file:///scratch/TCUSCAN/sgl_kernel_npu-2026.2.1-cp310-cp310-linux_x86_64.whl",
   "triton-ascend==3.2.0"
 ]

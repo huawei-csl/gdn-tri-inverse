@@ -61,13 +61,12 @@ secret_detection:
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
     - pip3 install pyyaml setuptools pytest
-    - pip3 install https://gitcode.com/Ascend/pytorch/releases/download/v7.3.0-pytorch2.8.0/torch_npu-2.8.0.post2-cp310-cp310-manylinux_2_28_x86_64.whl --index-url https://download.pytorch.org/whl/cpu # https://github.com/sgl-project/sgl-kernel-npu/pull/326
+    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu # https://github.com/sgl-project/sgl-kernel-npu/pull/326
 
 test_tri_inv_methods_on_sgl_kernels_npu:
   <<: *build_config
   stage: test
   script:
-    - pip3 install -v .
     - python3 -m pytest -v tests/sgl_kernels_npu
 
 
@@ -75,7 +74,6 @@ test_tri_inv_methods:
   <<: *build_config
   stage: test
   script:
-    - pip3 install -v .
     - python3 -m pytest -v tests/test_linalg.py
 
 
@@ -83,7 +81,6 @@ profile_tri_inv:
   <<: *build_config
   stage: test
   script:
-    - pip3 install -v .
     - make profile_tri_inv
   artifacts:
     expire_in: 1 hours

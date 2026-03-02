@@ -4,6 +4,7 @@ Code to perform end-to-end for Gated Delta Nets using different triangular inver
 ## TLDR
 ```
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-pip install .
+
+export CMAKE_GENERATOR="Unix Makefiles" && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu
 pytest tests/
 ```
