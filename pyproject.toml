@@ -19,10 +19,13 @@ dependencies = [
   "pandas==2.3.3",
   "seaborn==0.13.2",
   "matplotlib==3.10.8",
-  "tcuscan @ file:///scratch/TCUSCAN/tcuscan-0.1.0-cp310-cp310-linux_x86_64.whl",
-  "pto_kernels @ git+ssh://git@ssh.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/pto-kernels.git",
-  "sgl-kernel-npu @ file:///scratch/TCUSCAN/sgl_kernel_npu-2026.2.1-cp310-cp310-linux_x86_64.whl",
   "triton-ascend==3.2.0"
+]
+
+[project.optional-dependencies]
+kernels = [
+  "pto_kernels",
+  "sgl-kernel-npu",
 ]
 
 [build-system]

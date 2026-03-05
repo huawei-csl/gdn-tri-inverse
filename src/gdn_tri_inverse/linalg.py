@@ -1,7 +1,7 @@
 import torch
 from typing import Optional
-from tcuscan import run_tri_inv_cube_col_sweep
-from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
+import sgl_kernel_npu
+from sgl_kernel_npu.fla.solve_tril import solve_tril_npu as sgl_solve_tril_npu
 from pto_kernels import pto_tri_inv, pto_tri_inv_rec_unroll
 
 
@@ -51,7 +51,9 @@ def tri_inv_mcs(A: torch.Tensor) -> torch.Tensor:
     """
     n = A.shape[-1]
     A_view = A.view(-1, n, n)
-    A_inv = run_tri_inv_cube_col_sweep(A_view)
+    A_inv = torch.ops.npu.cube_triangular_inverse(
+        A_view
+    )  # requires import sgl_kernel_npu
     return A_inv.reshape(A.shape)
 
 
@@ -86,5 +88,5 @@ def tri_inv_triton(A: torch.Tensor):
     B = 1 if A.dim() == 2 else A.numel() // (BT * BT)
     A_view = A.view(-1, BT, BT)
     A_view = A_view.reshape(1, 1, B * BT, BT).transpose(1, 2).contiguous()
-    A_inv = solve_tril_npu(A_view)
+    A_inv = sgl_solve_tril_npu(A_view)
     return A_inv.transpose(1, 2).reshape(B, BT, BT)
