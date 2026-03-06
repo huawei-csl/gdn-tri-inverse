@@ -1,4 +1,16 @@
-DOCKER_IMAGE_TAG="gdn-main-cann-8.5.0"
+#!/bin/bash
+#
+# start_docker_910B2.sh
+#
+# Description:
+#   Start a Docker container with an SGLANG friendly image for triangular inverse benchmarking on Ascend 910B2 server.
+#   The script mounts the local cache of the user into the container so that the model weights are not downloaded every time the container is started.
+#
+# Usage:
+#   ./start_docker_910B2.sh
+#
+
+DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ddc62d3"
 
 drun() {
 
