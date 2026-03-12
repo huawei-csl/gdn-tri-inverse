@@ -31,23 +31,30 @@ def _test_tri_inv_common(
 ):
     torch.manual_seed(0)
     shape = (batch, chunk_size, chunk_size)
+    ref_dtype = torch.float64
 
     if chunk_size == 128 and tri_inv_fn == tri_inv_triton:
         assert True, "Triton does not support chunk_size 128"
         return
 
-    A = matrix_gen(shape=shape, dtype=dtype)
-    A = torch.tril(A, diagonal=-1)
+    Identity = torch.eye(chunk_size, dtype=ref_dtype)
+    L = matrix_gen(shape=shape, dtype=dtype)
+    L = torch.tril(L, diagonal=-1)
+    if tri_inv_fn in [tri_inv_mxr, tri_inv_mcs]:
+        L = L.transpose(-1, -2).contiguous()
+    I_plus_L = Identity + L.to(ref_dtype)
+
+    A = L
+    if tri_inv_fn == tri_inv_mcs:
+        A = I_plus_L.to(dtype)
 
     A_npu = A.to(device)
-    A_inv_npu = tri_inv_fn(A_npu)
-    A_inv = A_inv_npu.cpu()
+    I_plus_L_inv_npu = tri_inv_fn(A_npu)
+    I_plus_L_inv = I_plus_L_inv_npu.cpu()
     torch.npu.synchronize()
 
-    ref_dtype = torch.float64
-    A_inv = A_inv.to(ref_dtype)
-    Identity = torch.eye(chunk_size, dtype=ref_dtype)
-    I_recover = (Identity + A.to(ref_dtype)) @ A_inv
+    I_plus_L_inv = I_plus_L_inv.to(ref_dtype)
+    I_recover = I_plus_L @ I_plus_L_inv
     assert_close(
         I_recover,
         Identity.expand_as(I_recover),
@@ -61,8 +68,10 @@ def _test_tri_inv_common(
 @pytest.mark.parametrize(
     "tri_inv_fn,dtype,atol,rtol",
     [
+        (tri_inv_mcs, torch.float16, 1e-5, 1e-2),
         (tri_inv_vcs, torch.float16, 1e-5, 1e-2),
         (tri_inv_vcs, torch.float32, 1e-8, 5e-5),
+        (tri_inv_mxr, torch.float16, 1e-5, 1e-2),
         (tri_inv_triton, torch.float32, 1e-8, 5e-5),
     ],
 )
@@ -85,8 +94,6 @@ def test_tri_inv_stable_methods(
 @pytest.mark.parametrize(
     "tri_inv_fn,dtype,atol,rtol",
     [
-        (tri_inv_mcs, torch.float16, 1e-5, 1e-2),
-        (tri_inv_mxr, torch.float16, 1e-5, 1e-2),
         (tri_inv_qwen3_next_default, torch.float16, 1e-5, 1e-2),
         (tri_inv_qwen3_next_default, torch.float32, 1e-8, 5e-5),
     ],

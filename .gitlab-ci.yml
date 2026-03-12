@@ -61,6 +61,7 @@ secret_detection:
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
     - pip3 install pyyaml setuptools pytest
+    - pip3 install --force-reinstall /scratch/TCUSCAN/wheels/ci/sgl-kernel-npu/sgl_kernel_npu-2026.2.1-cp310-cp310-linux_x86_64.whl
     - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu # https://github.com/sgl-project/sgl-kernel-npu/pull/326
 
 test_tri_inv_methods_on_sgl_kernels_npu:
