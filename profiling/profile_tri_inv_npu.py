@@ -49,7 +49,7 @@ device = Device(torch.npu, NPU_DEVICE)
 TRIANGULAR_INVERSE_METHODS_ = {
     "torch-eager": tri_inv_qwen3_next_default,
     "triton": tri_inv_triton,
-    "column-sweep": tri_inv_vcs,
+    #    "column-sweep": tri_inv_vcs, # See https://gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse/-/issues/55
     "cube-column-sweep": tri_inv_mcs,
     "cube-rec-unroll": tri_inv_mxr,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
