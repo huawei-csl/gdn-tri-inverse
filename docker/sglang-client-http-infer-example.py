@@ -1,3 +1,9 @@
+"""
+This is an example of how to use the SGLANG server for inference using HTTP API.
+Make sure to start the SGLANG server using the `sglang-server-http-launch.sh` script before running this client script.
+
+You should see the word 'Paris' in the output logs."""
+
 import requests
 
 if __name__ == "__main__":

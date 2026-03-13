@@ -10,7 +10,7 @@
 #   ./start_docker_910B4.sh
 #
 
-DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ddc62d3"
+DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-b47b974"
 
 drun() {
 
@@ -22,7 +22,7 @@ sudo docker run -it --rm --privileged --network=host --ipc=host --shm-size=16g \
     -v /usr/local/Ascend/driver:/usr/local/Ascend/driver:ro \
     -v /etc/ascend_install.info:/etc/ascend_install.info:ro \
     --volume /usr/local/Ascend/firmware:/usr/local/Ascend/firmware \
-    --volume ~/sgl-kernel-npu/:/tmp/sgl-kernel-npu/ --volume ~/sglang/:/tmp/sglang/ \
+    --volume $(pwd):/workspace/gdn-tri-inv-repo \
     --name sglang-${USER} \
     --volume /var/queue_schedule:/var/queue_schedule --volume ~/.cache/:/root/.cache/ "$@"
 }

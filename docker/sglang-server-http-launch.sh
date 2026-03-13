@@ -14,15 +14,25 @@
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
-# FIXME(anastasios): require for x86 host, remove this when the server can run on arm host.
-pip3 remove triton -y
-pip3 install --force-reinstall -i https://test.pypi.org/simple/ "triton-ascend<3.2.0rc" --pre --no-cache-dir
+# On x86_64 architecture, we need to install the triton-ascend package from Test PyPI to ensure compatibility with the SGLANG server.
+if [[ "$(uname -m)" == "x86_64" ]]; then
+    pip3 uninstall triton -y
+    pip3 install --force-reinstall -i https://test.pypi.org/simple/ "triton-ascend<3.2.0rc" --pre --no-cache-dir
 
-python3 -m sglang.launch_server \
+    # Fixes the "ImportError: libGL.so.1: cannot open shared object file: No such file or directory" error when importing OpenCV in the SGLANG server.
+    pip install --force-reinstall opencv-python-headless
+fi
+
+
+
+echo "[GDN-TRI-INVERSE] Starting SGLANG server."
+echo "[GDN-TRI-INVERSE] Press Ctrl+z and 'bg' to send process in background"
+echo "[GDN-TRI-INVERSE] Default model is Qwen/Qwen3.5-0.8B-Base, you can change it by modifying the --model-path parameter in this script."
+sglang serve \
     --model-path Qwen/Qwen3.5-0.8B-Base \
     --attention-backend ascend \
     --disable-cuda-graph \
     --disable-radix-cache \
-    --tp-size 1 \ # Adjust the Tensor Parallelism (tp-size) size as needed for 910B2/910B4.
+    --tp-size 1 \
     --mem-fraction-static 0.8 \
-    --max-total-tokens 2048 > sglang_server.log 2>&1
+    --max-total-tokens 2048

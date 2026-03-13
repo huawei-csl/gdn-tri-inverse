@@ -7,7 +7,7 @@ export SGL_KERNEL_NPU_HTTPS_GIT_URL="${SGL_KERNEL_NPU_HTTPS_GIT_URL:-https://git
 export PTO_KERNELS_BRANCH="${PTO_KERNELS_BRANCH:-main}"
 export PTO_KERNELS_HTTPS_GIT_URL="${PTO_KERNELS_HTTPS_GIT_URL:-https://github.com/huawei-csl/pto-kernels.git}"
 export TILELANG_ASCEND_COMMIT="${TILELANG_ASCEND_COMMIT:-d4736eb}"
-export DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ddc62d3"
+export DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-$(git rev-parse --short HEAD)"
 
 pushd $GDN_TRI_INVERSE_LOCAL_PATH \
 && docker build --build-arg SGL_DOCKER_HOSTNAME="${SGL_DOCKER_HOSTNAME}" \
