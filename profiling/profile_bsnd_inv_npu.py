@@ -10,24 +10,26 @@ Profiling script that compares various solve_tril methods. Currently, profiles:
 """
 
 import argparse
+from curses import wrapper
 import logging
 import sys
 
+from numpy.linalg import inv
 import torch
 import torch.nn.functional as F
+from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
+from pto_kernels import pto_tri_bsnd_inv_rec_unroll
+
 
 from gdn_tri_inverse.linalg import (
-    tri_inv_qwen3_next_default,
     tri_inv_vcs,
     tri_inv_mcs,
     tri_inv_mxr,
-    tri_inv_triton,
 )
 
 from utils import Device, run_benchmark
-from functools import partial
 
-file_handler = logging.FileHandler(filename="benchmark_tri_inv.log")
+file_handler = logging.FileHandler(filename="benchmark_bsnd_inv.log")
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
 handlers = [file_handler, stdout_handler]
 
@@ -45,13 +47,90 @@ NPU_DEVICE = "npu:0"
 device = Device(torch.npu, NPU_DEVICE)
 
 
-# Map "triangular inverse method name" to Python function with signature fn(A) -> A^{-1}.
+def column_sweep_wrapper(A):
+    B, T, H, BT = A.shape
+    chunk_size = BT
+    padding_size = (chunk_size - T % chunk_size) % chunk_size
+    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
+
+    A = A.transpose(1, 2).contiguous()
+    A = A.view(-1, BT, BT)
+
+    torch.npu.synchronize()
+    A_inv = tri_inv_vcs(-A)
+    torch.npu.synchronize()
+
+    A_inv = (
+        A_inv.view(B, H, -1, BT)[:, :, :T, :].contiguous().transpose(1, 2).contiguous()
+    )
+    return A_inv
+
+
+def cube_column_sweep_wrapper(A):
+    B, T, H, BT = A.shape
+    chunk_size = BT
+    padding_size = (chunk_size - T % chunk_size) % chunk_size
+    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
+
+    A = A.transpose(1, 2).contiguous()
+    A = A.view(-1, BT, BT)
+
+    torch.npu.synchronize()
+    A_inv = tri_inv_mcs(-A.to(dtype=torch.float16))
+    torch.npu.synchronize()
+
+    A_inv = (
+        A_inv.view(B, H, -1, BT)[:, :, :T, :]
+        .contiguous()
+        .transpose(1, 2)
+        .contiguous()
+        .to(dtype=A.dtype)
+    )
+    return A_inv
+
+
+def rec_unroll_wrapper(A):
+    B, T, H, BT = A.shape
+    chunk_size = BT
+    padding_size = (chunk_size - T % chunk_size) % chunk_size
+    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
+
+    A = A.transpose(1, 2).contiguous()
+    A = A.view(-1, BT, BT).transpose(1, 2).contiguous()
+
+    torch.npu.synchronize()
+    A_inv = tri_inv_mxr(A.to(dtype=torch.float16))
+    torch.npu.synchronize()
+
+    A_inv = (
+        A_inv.transpose(1, 2)
+        .contiguous()
+        .view(B, H, -1, BT)[:, :, :T, :]
+        .contiguous()
+        .transpose(1, 2)
+        .contiguous()
+        .to(dtype=A.dtype)
+    )
+    return A_inv
+
+
+def bsnd_rec_unroll_wrapper(A):
+    B, T, H, BT = A.shape
+    A = A.view(B * T // BT, BT, H, BT)
+
+    torch.npu.synchronize()
+    A_inv = pto_tri_bsnd_inv_rec_unroll(A.to(dtype=torch.float16))
+    torch.npu.synchronize()
+
+    return A_inv
+
+
 TRIANGULAR_INVERSE_METHODS_ = {
-    "torch-eager": tri_inv_qwen3_next_default,
-    "triton": tri_inv_triton,
-    "column-sweep": tri_inv_vcs,
-    "cube-column-sweep": tri_inv_mcs,
-    "cube-rec-unroll": tri_inv_mxr,
+    "triton": solve_tril_npu,
+    "column-sweep": column_sweep_wrapper,
+    "cube-column-sweep": cube_column_sweep_wrapper,
+    "cube-rec-unroll": rec_unroll_wrapper,
+    "bsnd-rec-unroll": bsnd_rec_unroll_wrapper,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
 }
 
@@ -63,27 +142,18 @@ def profile_solve_tril(
     H: int,
     chunk_size: int = 64,
     dtype: torch.dtype = torch.float16,
-    inverse_type: str = "baseline",
+    inverse_type: str = "triton",
 ):
     torch.manual_seed(42)
 
     inv_fn = TRIANGULAR_INVERSE_METHODS_[inverse_type]
 
     # do not randomly initialize A otherwise the inverse is not stable
-    k = F.normalize(
-        torch.randn((B, H, T, chunk_size), dtype=dtype, device=NPU_DEVICE), dim=-1
+    A = F.normalize(
+        torch.randn((B, T, H, chunk_size), dtype=dtype, device=NPU_DEVICE), dim=-1
     )
-    # Pad the second-to-last dimension (T) to be a multiple of chunk_size
-    padding_size = (chunk_size - T % chunk_size) % chunk_size
-    k_padded = F.pad(k, (0, 0, 0, padding_size, 0, 0, 0, 0))
-    k_padded = k_padded.reshape(B, H, -1, chunk_size, chunk_size)
-    A = (k_padded @ k_padded.transpose(-1, -2)).tril(-1)
     torch.npu.synchronize()
 
-    assert (
-        A.ndim >= 4
-    ), f"Input tensor must be at least 4-dimensional. Got {A.ndim} dimensions."
-    A = A.reshape(-1, A.shape[-3], A.shape[-2], A.shape[-1])
     numel = A.numel()
 
     def run_solve_tril():
@@ -116,7 +186,7 @@ if __name__ == "__main__":  # noqa
     chunk_size = args.chunk_size
     dtype = "fp16"  # TODO: support fp32
 
-    filename = f"bench_results_solve_tril_{chunk_size}.csv"
+    filename = f"bench_results_bsnd_tril_{chunk_size}.csv"
     with open(filename, "w", encoding="UTF-8") as fd:
         fd.write("inverse_type,dtype,B,T,H,numel,chunk_size,time_us\n")
 
