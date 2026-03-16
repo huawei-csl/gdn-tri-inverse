@@ -16,7 +16,7 @@ from gdn_tri_inverse.linalg import (
 )
 from utils import Device, run_torch_profiler, run_benchmark
 
-NPU_DEVICE = "npu:0"
+NPU_DEVICE = os.getenv("GDN_TRI_INVERSE_NPU_DEVICE", "npu:0")
 device = Device(torch.npu, NPU_DEVICE)
 
 

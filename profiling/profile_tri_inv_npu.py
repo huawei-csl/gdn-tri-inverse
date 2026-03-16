@@ -12,6 +12,7 @@ Profiling script that compares various solve_tril methods. Currently, profiles:
 import argparse
 import logging
 import sys
+import os
 
 import torch
 import torch.nn.functional as F
@@ -40,7 +41,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-NPU_DEVICE = "npu:0"
+NPU_DEVICE = os.getenv("GDN_TRI_INVERSE_NPU_DEVICE", "npu:0")
 device = Device(torch.npu, NPU_DEVICE)
 
 
@@ -49,7 +50,7 @@ TRIANGULAR_INVERSE_METHODS_ = {
     "torch-eager": tri_inv_qwen3_next_default,
     "triton": tri_inv_triton,
     "column-sweep": tri_inv_vcs,
-    # "cube-column-sweep": tri_inv_mcs, # https://gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse/-/issues/58
+    # "cube-column-sweep": tri_inv_mcs,
     "cube-rec-unroll": tri_inv_mxr,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
 }

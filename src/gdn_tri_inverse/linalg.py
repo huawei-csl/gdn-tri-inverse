@@ -57,16 +57,20 @@ def tri_inv_mcs(A: torch.Tensor) -> torch.Tensor:
     return A_inv.reshape(A.shape)
 
 
-def tri_inv_mxr(A: torch.Tensor) -> torch.Tensor:
+def tri_inv_mxr(A: torch.Tensor, is_bsnd: bool = False) -> torch.Tensor:
     """
     The individual matrices of the tensor A must be strictly
     upper triangular. The algorithm implements a matmul-based mixed
     recursive strategy (hence the MXR acronym) to compute the inverses.
     Accepts fp16 as input and produces fp32 as output.
+    Supports contiguous or BSDN tensor layout.
     """
     n = A.shape[-1]
-    A_view = A.view(-1, n, n)
-    A_inv = pto_tri_inv_rec_unroll(A_view)
+    if is_bsnd:
+        A_inv = pto_tri_inv_rec_unroll(A, is_bsnd_format=True)
+    else:
+        A_view = A.view(-1, n, n)
+        A_inv = pto_tri_inv_rec_unroll(A_view)
     return A_inv.reshape(A.shape)
 
 

@@ -48,3 +48,14 @@ You should see
 ```
 {'id': 'f051d47f3f5045a2a7aa28edb6b9d971', 'object': 'chat.completion', 'created': 1773388679, 'model': 'Qwen/Qwen3.5-0.8B-Base', 'choices': [{'index': 0, 'message': {'role': 'assistant', 'content': 'The capital of France is **Paris**. Founded in 751 AD by Charlemagne, it is a major cultural and political hub in Europe and the world.\n', 'reasoning_content': None, 'tool_calls': None}, 'logprobs': None, 'finish_reason': 'stop', 'matched_stop': 248044}], 'usage': {'prompt_tokens': 19, 'total_tokens': 56, 'completion_tokens': 37, 'prompt_tokens_details': None, 'reasoning_tokens': 0}, 'metadata': {'weight_version': 'default'}}
 ```
+
+## Profiling
+The profiling scripts that compare all the methods are inside `profiling/`.
+E.g., to compare only the triangular inverse methods run:
+```bash
+./profiling/run_profiling_tri_inv.sh
+```
+Optionally, before running the script, the specific device that will be used can be specified:
+```bash
+export GDN_TRI_INVERSE_NPU_DEVICE="npu:4" # Optional, set NPU device to run profiling on.
+```

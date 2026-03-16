@@ -13,12 +13,12 @@ import argparse
 from curses import wrapper
 import logging
 import sys
+import os
 
 from numpy.linalg import inv
 import torch
 import torch.nn.functional as F
 from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
-from pto_kernels import pto_tri_bsnd_inv_rec_unroll
 
 
 from gdn_tri_inverse.linalg import (
@@ -43,7 +43,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-NPU_DEVICE = "npu:0"
+NPU_DEVICE = os.getenv("GDN_TRI_INVERSE_NPU_DEVICE", "npu:0")
 device = Device(torch.npu, NPU_DEVICE)
 
 
@@ -118,9 +118,7 @@ def bsnd_rec_unroll_wrapper(A):
     B, T, H, BT = A.shape
     A = A.view(B * T // BT, BT, H, BT)
 
-    torch.npu.synchronize()
-    A_inv = pto_tri_bsnd_inv_rec_unroll(A.to(dtype=torch.float16))
-    torch.npu.synchronize()
+    A_inv = tri_inv_mxr(A.to(dtype=torch.float16), is_bsnd=True)
 
     return A_inv
 
@@ -128,7 +126,7 @@ def bsnd_rec_unroll_wrapper(A):
 TRIANGULAR_INVERSE_METHODS_ = {
     "triton": solve_tril_npu,
     "column-sweep": column_sweep_wrapper,
-    "cube-column-sweep": cube_column_sweep_wrapper,
+    # "cube-column-sweep": cube_column_sweep_wrapper,
     "cube-rec-unroll": rec_unroll_wrapper,
     "bsnd-rec-unroll": bsnd_rec_unroll_wrapper,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
