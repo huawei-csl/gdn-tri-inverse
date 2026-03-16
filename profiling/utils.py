@@ -80,7 +80,7 @@ def run_benchmark(
         start_events[i].record()
         fn()
         end_events[i].record()
-        device.sync()
+        end_events[i].synchronize()
         elapsed_time_ms = start_events[i].elapsed_time(end_events[i])
         logger.info(f"Elapsed time: {elapsed_time_ms:.5} ms")
         yield elapsed_time_ms

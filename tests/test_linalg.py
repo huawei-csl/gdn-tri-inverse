@@ -48,8 +48,13 @@ def _test_tri_inv_common(
     if tri_inv_fn == tri_inv_mcs:
         A = I_plus_L.to(dtype)
 
-    A_npu = A.to(device)
+    A_npu = A.npu()
+    torch.npu.synchronize()
+
+    kernel_event = torch.npu.Event()
     I_plus_L_inv_npu = tri_inv_fn(A_npu)
+    kernel_event.record()
+    kernel_event.synchronize()  # here use the same sync method as in profiling/
     I_plus_L_inv = I_plus_L_inv_npu.cpu()
     torch.npu.synchronize()
 
@@ -64,7 +69,7 @@ def _test_tri_inv_common(
 
 
 @pytest.mark.parametrize("chunk_size", [32, 64, 128])
-@pytest.mark.parametrize("batch", [1, 17])
+@pytest.mark.parametrize("batch", [1, 17, 512])
 @pytest.mark.parametrize(
     "tri_inv_fn,dtype,atol,rtol",
     [
