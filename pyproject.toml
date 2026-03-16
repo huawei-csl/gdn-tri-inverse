@@ -15,18 +15,22 @@ dependencies = [
   "PyYAML==6.0.2",
   "attrs==24.2.0",
   "einops==0.8.1",
+  "torch==2.8.0",
   "torch-npu==2.8.0.post2",
   "pandas==2.3.3",
   "seaborn==0.13.2",
   "matplotlib==3.10.8",
-  "triton-ascend==3.2.0"
+  "triton-ascend==3.2.0",
+  "pto_kernels @ git+https://github.com/huawei-csl/pto-kernels.git",
 ]
 
 [project.optional-dependencies]
 kernels = [
-  "pto_kernels",
   "sgl-kernel-npu",
 ]
+
+[tool.pip]
+extra-index-url = ["https://download.pytorch.org/whl/cpu"]
 
 [build-system]
 requires = ["setuptools >= 77.0.3"]

@@ -4,12 +4,9 @@ ARG SGL_DOCKER_HOSTNAME=""
 FROM ${SGL_DOCKER_HOSTNAME}lmsysorg/sglang:main-cann8.5.0-910b AS downloader
 ARG SGL_KERNEL_NPU_BRANCH="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
 ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git"
-ARG PTO_KERNELS_BRANCH="main"
-ARG PTO_KERNELS_HTTPS_GIT_URL="https://github.com/huawei-csl/pto-kernels.git"
 
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
 ENV SGL_KERNEL_NPU_BRANCH=${SGL_KERNEL_NPU_BRANCH}
-ENV PTO_KERNELS_HTTPS_GIT_URL=${PTO_KERNELS_HTTPS_GIT_URL}
 
 RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} --branch ${SGL_KERNEL_NPU_BRANCH} \
     && cd sgl-kernel-npu \
@@ -17,15 +14,6 @@ RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} --branch ${SGL_KERNEL_NPU_BRANCH} 
     && cp output/sgl_kernel_npu*.whl /tmp/ \
     && cd ../ \
     && rm -rf sgl-kernel-npu
-
-RUN git clone ${PTO_KERNELS_HTTPS_GIT_URL} --branch ${PTO_KERNELS_BRANCH} \
-    && cd pto-kernels \
-    && source /usr/local/Ascend/ascend-toolkit/set_env.sh \
-    && source /usr/local/Ascend/nnal/atb/set_env.sh \
-    && make build_wheel \
-    && cp pto_kernels-*.whl /tmp/ \
-    && cd ../ \
-    && rm -rf pto-kernels
 
 # Main image
 FROM ${SGL_DOCKER_HOSTNAME}lmsysorg/sglang:main-cann8.5.0-910b AS main
@@ -48,7 +36,7 @@ RUN pip install /workspace/*.whl
 
 # Install gdn-tri-inverse
 ADD ${GDN_TRI_INVERSE_LOCAL_PATH} /workspace/gdn-tri-inverse
-RUN cd /workspace/gdn-tri-inverse && pip install .
+RUN cd /workspace/gdn-tri-inverse && make install
 
 # Set up environment for runtime
 COPY ${GDN_TRI_INVERSE_LOCAL_PATH}/docker/set_env.sh /etc/profile.d/02-env-ascend-and-tilelang.sh
