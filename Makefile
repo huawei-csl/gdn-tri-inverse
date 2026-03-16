@@ -1,4 +1,8 @@
-.PHONY: setup_once
+.PHONY: setup_once install_gh_pto_kernels setup_once profile_tri_inv install
+
+
+install_gh_pto_kernels:
+	export CMAKE_GENERATOR="Unix Makefiles" && pip3 install --force-reinstall -v git+https://github.com/huawei-csl/pto-kernels.git --extra-index-url https://download.pytorch.org/whl/cpu
 
 setup_once:
 	pip3 install pyyaml setuptools pytest numpy einops
@@ -11,5 +15,5 @@ profile_tri_inv:
 	export PATH=${PATH}:${HOME}/.local/bin/ && jupyter nbconvert --to notebook --inplace --execute profiling/nbs/plots_tri_inv.ipynb
 
 
-install:
+install: install_gh_pto_kernels
 	export CMAKE_GENERATOR="Unix Makefiles" && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu
