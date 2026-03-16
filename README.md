@@ -1,11 +1,24 @@
 # gdn-tri-inverse
+
 Code to perform end-to-end for Gated Delta Nets using different triangular inversion algorithms.
 
 ## TLDR
+
+On the first time, you may want to run `make setup_once` to setup the PyTorch environment.
+
 ```
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
-export CMAKE_GENERATOR="Unix Makefiles" && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu
+# Step 1 Install pto-kernels
+
+# Install the internal gitlab pto-kernels
+make install_pto_kernels_internal
+
+# Or, install the github OSS pto-kernels
+make install_pto_kernels_gh
+
+
+pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu
 pytest tests/
 ```
 

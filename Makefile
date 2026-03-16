@@ -14,6 +14,11 @@ profile_tri_inv:
 	pip install jupyter ipykernel nbconvert pandas seaborn
 	export PATH=${PATH}:${HOME}/.local/bin/ && jupyter nbconvert --to notebook --inplace --execute profiling/nbs/plots_tri_inv.ipynb
 
+install_pto_kernels_internal:
+	export CMAKE_GENERATOR="Unix Makefiles" && pip install -v git+ssh://git@ssh.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/pto-kernels.git
+
+install_pto_kernels_gh:
+	export CMAKE_GENERATOR="Unix Makefiles" && pip install -v git+https://github.com/huawei-csl/pto-kernels.git
 
 install: install_gh_pto_kernels
 	export CMAKE_GENERATOR="Unix Makefiles" && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu

@@ -25,7 +25,6 @@ from gdn_tri_inverse.linalg import (
 )
 
 from utils import Device, run_benchmark
-from functools import partial
 
 file_handler = logging.FileHandler(filename="benchmark_tri_inv.log")
 stdout_handler = logging.StreamHandler(stream=sys.stdout)
