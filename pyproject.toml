@@ -30,7 +30,7 @@ kernels = [
 ]
 
 [tool.pip]
-extra-index-url = ["https://download.pytorch.org/whl/cpu"]
+extra-index-url = ["https://download.pytorch.org/whl/cpu", "https://test.pypi.org/simple/"]
 
 [build-system]
 requires = ["setuptools >= 77.0.3"]

@@ -57,13 +57,11 @@ secret_detection:
 
 
 .build_config: &build_config
-  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ef62c41
+  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320
   tags:
     - docker_npu
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
-    - pip3 install pyyaml setuptools pytest
-    - pip3 uninstall triton -y && pip3 install --force-reinstall -i https://test.pypi.org/simple/ "triton-ascend<3.2.0rc" --pre --no-cache-dir
     - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu 
 
 build:

@@ -11,7 +11,7 @@
 #
 
 # On 910B2 server, we MUST build this image by yourself.
-DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ef62c41"
+DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320"
 
 drun() {
 

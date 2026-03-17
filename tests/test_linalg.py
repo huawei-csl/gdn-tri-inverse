@@ -106,7 +106,7 @@ def test_tri_inv_stable_methods(
 @pytest.mark.parametrize("matrix_gen", [gen_random_matrix])
 @torch.inference_mode()
 @pytest.mark.skip(
-    reason="The triangular inverse MCS MXR and default forward substitution tests fail."
+    reason="The triangular inverse default forward substitution tests fail."
 )
 def test_tri_inv_unstable_methods(
     chunk_size: int,

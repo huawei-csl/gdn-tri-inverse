@@ -2,24 +2,59 @@
 
 Code to perform end-to-end for Gated Delta Nets using different triangular inversion algorithms.
 
-## TLDR
+## Running GDN with docker (recommended)
 
-On the first time, you may want to run `make setup_once` to setup the PyTorch environment.
-
+Step 1: Build the Docker image (if needed):
+```bash
+bash docker/build_docker.sh
 ```
+
+Step 2: Start the container, test, and profile:
+```bash
+bash docker/start_docker_910B4.sh
+```
+```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+cd gdn-tri-inv-repo
+make test_tri_inv
+make profile_tri_inv
+```
 
-# Step 1 Install pto-kernels
+Step 3 (optional): Compile again and test
+```bash
+make install
+make test_tri_inv
+```
 
-# Install the internal gitlab pto-kernels
-make install_pto_kernels_internal
+## Running GDN baremetal (only for python version <= 3.11)
 
-# Or, install the github OSS pto-kernels
-make install_pto_kernels_gh
+Step 1: Install `gdn-tri-inverse`:
 
+```bash
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+make install
+```
 
-pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu
-pytest tests/
+Step 2: Install `sgl-kernel-npu`:
+```bash
+git clone https://github.com/gioelegott/sgl-kernel-npu.git --branch checkout 6-triinv-integrate-tri_inv_cube_col_sweep-kernel
+cd sgl-kernel-npu
+bash build.sh -a kernels
+pip install --force-reinstall output/sgl_kernel_npu*.whl
+cd ..
+```
+
+Step 3: install `tilelang-ascend`
+[WIP]
+
+Step 4: Run the tests:
+```bash
+make test_tri_inv
+```
+
+Step 5: Run profiling:
+```bash
+make profile_tri_inv
 ```
 
 

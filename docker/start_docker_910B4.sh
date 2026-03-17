@@ -10,11 +10,11 @@
 #   ./start_docker_910B4.sh
 #
 
-DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ef62c41"
+DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320"
 
 drun() {
 
-sudo docker run -it --rm --privileged --network=host --ipc=host --shm-size=16g \
+docker run -it --rm --privileged --network=host --ipc=host --shm-size=16g \
     --device=/dev/davinci0 --device=/dev/davinci1 \
     --device=/dev/davinci_manager \
     --device=/dev/hisi_hdc \

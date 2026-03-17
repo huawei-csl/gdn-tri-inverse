@@ -22,7 +22,8 @@ ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
 ARG GDN_TRI_INVERSE_LOCAL_PATH="."
 
 # Install build dependencies
-RUN pip install pyyaml setuptools
+RUN pip install pyyaml setuptools pytest
+RUN pip uninstall triton -y
 
 # Install tilelang
 RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
@@ -32,11 +33,14 @@ RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
 
 # Install sgl-kernel-npu and pto-kernels
 COPY --from=downloader /tmp/*.whl /workspace/
-RUN pip install /workspace/*.whl
+RUN pip install --force-reinstall /workspace/*.whl
 
 # Install gdn-tri-inverse
 ADD ${GDN_TRI_INVERSE_LOCAL_PATH} /workspace/gdn-tri-inverse
-RUN cd /workspace/gdn-tri-inverse && make install
+RUN cd /workspace/gdn-tri-inverse \
+    && export CMAKE_GENERATOR="Unix Makefiles" \
+    && . /usr/local/Ascend/ascend-toolkit/set_env.sh \
+    && pip install --force-reinstall -v . --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
 
 # Set up environment for runtime
 COPY ${GDN_TRI_INVERSE_LOCAL_PATH}/docker/set_env.sh /etc/profile.d/02-env-ascend-and-tilelang.sh

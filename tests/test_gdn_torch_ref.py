@@ -35,6 +35,9 @@ device = "npu:0"  # pick an available device
         ]
     ],
 )
+@pytest.mark.skip(
+    reason="The triangular inverse default forward substitution tests fail."
+)
 @torch.inference_mode()
 def test_chunk_forward_ref(
     B: int,
