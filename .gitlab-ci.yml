@@ -5,6 +5,7 @@ stages:
    - linter
    - build
    - test
+   - profile
 
 # Define the workflow rules manually to make sure only a single pipeline
 # is created for each MR update. Without that, GitLab creates one pipeline
@@ -56,31 +57,37 @@ secret_detection:
 
 
 .build_config: &build_config
+  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-ef62c41
   tags:
-    - baremetal
+    - docker_npu
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
     - pip3 install pyyaml setuptools pytest
-    - pip3 install --force-reinstall /scratch/TCUSCAN/wheels/ci/sgl-kernel-npu/sgl_kernel_npu-2026.2.1-cp310-cp310-linux_x86_64.whl
-    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu # https://github.com/sgl-project/sgl-kernel-npu/pull/326
+    - pip3 uninstall triton -y && pip3 install --force-reinstall -i https://test.pypi.org/simple/ "triton-ascend<3.2.0rc" --pre --no-cache-dir
+    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu 
 
-test_tri_inv_methods_on_sgl_kernels_npu:
+build:
+  <<: *build_config
+  stage: build
+  script:
+    - echo "gdn-tri-inverse pip install succeeded!" || exit $?
+
+test_tri_inv:
   <<: *build_config
   stage: test
   script:
-    - python3 -m pytest -v tests/sgl_kernels_npu
+    - pytest tests/test_linalg.py
 
-
-test_tri_inv_methods:
+test_sgl_kernels_npu:
   <<: *build_config
   stage: test
   script:
-    - python3 -m pytest -v tests/test_linalg.py
+    - pytest tests/sgl_kernels_npu
 
 
 profile_tri_inv:
   <<: *build_config
-  stage: test
+  stage: profile
   script:
     - make profile_tri_inv
   artifacts:
