@@ -56,8 +56,6 @@ secret_detection:
     - gitleaks detect -v --source .
 
 
-
-
 .build_config: &build_config
   image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-d3f7bb6 # See ISSUE-65 for sglang-server
   tags:
@@ -113,7 +111,7 @@ profile_tri_inv_910B2:
     - docker_npu_910B2
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
-    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu 
+    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu
 
   stage: profile
   script:
@@ -124,5 +122,19 @@ profile_tri_inv_910B2:
       - bench_results_solve_tril*.csv
       - benchmark_tri_inv.log
       - profiling/nbs/figs/*.png
+  when: manual
+  allow_failure: true
+
+
+profile_gdn_layer:
+  <<: *build_config
+  stage: profile
+  script:
+    - source /workspace/tilelang-ascend/set_env.sh && make profile_gdn_layer
+  artifacts:
+    expire_in: 1 hours
+    paths:
+      - bench_results_gdn*.csv
+      - benchmark_gdn.log
   when: manual
   allow_failure: true

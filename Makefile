@@ -10,5 +10,8 @@ profile_tri_inv:
 	pip install jupyter ipykernel nbconvert pandas seaborn
 	export PATH=${PATH}:${HOME}/.local/bin/ && jupyter nbconvert --to notebook --inplace --execute profiling/nbs/plots_tri_inv.ipynb
 
+profile_gdn_layer:
+	bash profiling/run_profiling_gdn.sh
+
 install:
 	export CMAKE_GENERATOR="Unix Makefiles" && . /usr/local/Ascend/ascend-toolkit/set_env.sh && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu
