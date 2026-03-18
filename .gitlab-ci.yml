@@ -92,11 +92,32 @@ test_tilelang_opt_gdn:
     - . /workspace/tilelang-ascend/set_env.sh && python -m pytest tests/tilelang_opt_gdn
 
 
-profile_tri_inv:
+profile_tri_inv_910B4:
   <<: *build_config
   stage: profile
   script:
     - . /workspace/tilelang-ascend/set_env.sh && make profile_tri_inv
+  artifacts:
+    expire_in: 1 hours
+    paths:
+      - bench_results_solve_tril*.csv
+      - benchmark_tri_inv.log
+      - profiling/nbs/figs/*.png
+  when: manual
+  allow_failure: true
+
+
+profile_tri_inv_910B2:
+  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320
+  tags:
+    - docker_npu_910B2
+  before_script:
+    - source /usr/local/Ascend/ascend-toolkit/set_env.sh
+    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu 
+
+  stage: profile
+  script:
+    - make profile_tri_inv
   artifacts:
     expire_in: 1 hours
     paths:
