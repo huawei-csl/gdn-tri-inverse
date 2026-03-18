@@ -56,13 +56,15 @@ secret_detection:
     - gitleaks detect -v --source .
 
 
+
+
 .build_config: &build_config
-  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320
+  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-d3f7bb6 # See ISSUE-65 for sglang-server
   tags:
     - docker_npu
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
-    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu 
+    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu
 
 build:
   <<: *build_config
@@ -82,12 +84,19 @@ test_sgl_kernels_npu:
   script:
     - pytest tests/sgl_kernels_npu
 
+# Test the Tilelang GDN inverse optimized implementation.
+test_tilelang_opt_gdn:
+  <<: *build_config
+  stage: test
+  script:
+    - . /workspace/tilelang-ascend/set_env.sh && python -m pytest tests/tilelang_opt_gdn
+
 
 profile_tri_inv:
   <<: *build_config
   stage: profile
   script:
-    - make profile_tri_inv
+    - . /workspace/tilelang-ascend/set_env.sh && make profile_tri_inv
   artifacts:
     expire_in: 1 hours
     paths:

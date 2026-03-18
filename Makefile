@@ -1,5 +1,7 @@
-.PHONY: setup_once install_gh_pto_kernels install_pto_kernels_internal install profile_tri_inv
+.PHONY: clean setup_once install_gh_pto_kernels install_pto_kernels_internal install profile_tri_inv
 
+clean:
+	rm -rf build kernel_meta/ output/
 test_tri_inv:
 	python -m pytest -v tests/test_linalg.py
 

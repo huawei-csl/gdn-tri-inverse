@@ -1,12 +1,13 @@
 """
-Docstring for benchmark.bench_solve_tril
+Docstring for profiling.profile_tri_inv_npu
 
-Profiling script that compares various solve_tril methods. Currently, profiles:
-1. `torch_eager`: This is the vanilla PyTorch eager mode forward substitution method.
-2. `triton`: Triton-ascend method
-3. `column_sweep`: Vector-only column sweep method written in pto-isa.
-4. `cube_column_sweep`: CUbe column sweep method written in AscendC.
-5. `cube_rec_unroll`: Cube optimized inverse
+Profiling script that compares various triangular inverse methods for Ascend NPUs. Currently, it supports the following methods:
+- `torch_eager`: This is the vanilla PyTorch eager mode forward substitution method.
+- `triton`: Triton-ascend method
+- `column_sweep`: Vector-only column sweep method written in PTO-ISA.
+- `cube_column_sweep`: CUbe column sweep method written in AscendC.
+- `cube_rec_unroll`: Cube-only optimized triangular inverse.
+- `tilelang`: Mixed AIC/AIV triangular inverse from tile-lang
 """
 
 import argparse
@@ -17,10 +18,13 @@ import os
 import torch
 import torch.nn.functional as F
 
+from gdn_tri_inverse.tilelang_chunk_gdn.opt_gdn_solve_tril import (
+    solve_tril as solve_tril_tilelang,
+)
 from gdn_tri_inverse.linalg import (
     tri_inv_qwen3_next_default,
     tri_inv_vcs,
-    tri_inv_mcs,
+    # tri_inv_mcs,
     tri_inv_mxr,
     tri_inv_triton,
 )
@@ -52,6 +56,7 @@ TRIANGULAR_INVERSE_METHODS_ = {
     "column-sweep": tri_inv_vcs,
     # "cube-column-sweep": tri_inv_mcs,
     "cube-rec-unroll": tri_inv_mxr,
+    "tilelang_opt": solve_tril_tilelang,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
 }
 
@@ -69,7 +74,6 @@ def profile_solve_tril(
 
     inv_fn = TRIANGULAR_INVERSE_METHODS_[inverse_type]
 
-    # do not randomly initialize A otherwise the inverse is not stable
     k = F.normalize(
         torch.randn((B, H, T, chunk_size), dtype=dtype, device=NPU_DEVICE), dim=-1
     )

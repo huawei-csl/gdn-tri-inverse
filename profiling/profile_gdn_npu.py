@@ -7,6 +7,9 @@ import os
 
 
 from gdn_tri_inverse.core import chunk_gated_delta_rule_ref
+from gdn_tri_inverse.tilelang_chunk_gdn.opt_gdn_solve_tril import (
+    solve_tril as solve_tril_tilelang,
+)
 from gdn_tri_inverse.linalg import (
     tri_inv_qwen3_next_default,
     tri_inv_vcs,
@@ -26,6 +29,7 @@ INV_FNS_ = {
     "cube-column-sweep": tri_inv_mcs,
     "cube-rec-unroll": tri_inv_mxr,
     "triton": tri_inv_triton,
+    "tilelang-opt": solve_tril_tilelang,
 }
 
 
