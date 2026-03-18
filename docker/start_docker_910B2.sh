@@ -11,7 +11,7 @@
 #
 
 # On 910B2 server, we MUST build this image by yourself.
-DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320"
+DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-44e1142"
 
 drun() {
 
@@ -27,4 +27,4 @@ docker run -it --rm --privileged --network=host --ipc=host --shm-size=16g \
     --volume /var/queue_schedule:/var/queue_schedule --volume ~/.cache/:/root/.cache/ "$@"
 }
 
-drun --env "HF_ENDPOINT=https://hf-mirror.com" ${DOCKER_IMAGE_TAG} /usr/bin/bash
+drun "$@" --env "HF_ENDPOINT=https://hf-mirror.com" ${DOCKER_IMAGE_TAG} /usr/bin/bash

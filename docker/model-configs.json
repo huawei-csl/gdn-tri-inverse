@@ -1,0 +1,27 @@
+[
+  {
+    "model": "Qwen/Qwen3.5-0.8B",
+    "tp": 1,
+    "mem": 0.3
+  },
+  {
+    "model": "Qwen/Qwen3.5-9B",
+    "tp": 1,
+    "mem": 0.5
+  },
+  {
+    "model": "Qwen/Qwen3.5-27B",
+    "tp": 4,
+    "mem": 0.7
+  },
+  {
+    "model": "moonshotai/Kimi-Linear-48B-A3B-Instruct",
+    "tp": 4,
+    "mem": 0.7
+  },
+  {
+    "model": "Qwen/Qwen3-Next-80B-A3B-Instruct",
+    "tp": 4,
+    "mem": 0.7
+  }
+]
