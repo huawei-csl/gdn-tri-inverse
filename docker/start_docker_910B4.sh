@@ -10,7 +10,7 @@
 #   ./start_docker_910B4.sh
 #
 
-DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320"
+DOCKER_IMAGE_TAG="registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-19032026"
 
 drun() {
 

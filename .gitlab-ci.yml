@@ -57,7 +57,7 @@ secret_detection:
 
 
 .build_config: &build_config
-  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-d3f7bb6 # See ISSUE-65 for sglang-server
+  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-19032026
   tags:
     - docker_npu
   before_script:
@@ -87,7 +87,7 @@ test_tilelang_opt_gdn:
   <<: *build_config
   stage: test
   script:
-    - . /workspace/tilelang-ascend/set_env.sh && python -m pytest tests/tilelang_opt_gdn
+    - source /workspace/tilelang-ascend/set_env.sh && python -m pytest tests/tilelang_opt_gdn
 
 
 profile_tri_inv_910B4:
@@ -106,7 +106,7 @@ profile_tri_inv_910B4:
 
 
 profile_tri_inv_910B2:
-  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-8644320
+  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-19032026
   tags:
     - docker_npu_910B2
   before_script:
@@ -115,7 +115,7 @@ profile_tri_inv_910B2:
 
   stage: profile
   script:
-    - make profile_tri_inv
+    - source /workspace/tilelang-ascend/set_env.sh && make profile_tri_inv
   artifacts:
     expire_in: 1 hours
     paths:
