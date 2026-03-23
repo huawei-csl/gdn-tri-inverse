@@ -13,5 +13,11 @@ profile_tri_inv:
 profile_gdn_layer:
 	bash profiling/run_profiling_gdn.sh
 
+profile_tilelang_full_gdn: # Profile the tilelang-ascend GDN layer break-down stacked plot
+	python profiling/bench_tilelang_full_gdn.py
+
+analyze_tilelang_opt_solve_tril: # Analyze the numerical accuracy of the tilelang-ascend optimized solve_tril implementation
+	python profiling/analysis_tilelang_opt_solve_tril.py
+
 install:
 	export CMAKE_GENERATOR="Unix Makefiles" && . /usr/local/Ascend/ascend-toolkit/set_env.sh && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu

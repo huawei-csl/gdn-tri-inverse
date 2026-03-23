@@ -402,6 +402,20 @@ def ref_solve_tril(a):
     return o.to(torch.float16)
 
 
+def ref_all_ones_tril(B, H, L, C, strict=True):
+    """Create a (B, H, L, C) tensor where each (C, C) chunk block is an
+    all-ones lower triangular matrix.  strict=True uses tril(-1) (no diagonal)."""
+    chunk_num = (L + C - 1) // C
+    diag = -1 if strict else 0
+    block = torch.ones(C, C).tril(diag).to(torch.float16)  # (C, C)
+    a = (
+        block.view(1, 1, 1, C, C)
+        .expand(B, H, chunk_num, C, C)
+        .reshape(B, H, chunk_num * C, C)
+    )
+    return a.npu()
+
+
 def ref_chunk_cumsum(g, C):
     B, H, L = g.shape
     chunk_num = (L + C - 1) // C

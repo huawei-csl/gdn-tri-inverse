@@ -58,26 +58,30 @@ secret_detection:
 
 .build_config: &build_config
   image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-19032026
-  tags:
-    - docker_npu
   before_script:
     - source /usr/local/Ascend/ascend-toolkit/set_env.sh
     - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu
 
 build:
   <<: *build_config
+  tags:
+    - docker_npu
   stage: build
   script:
     - echo "gdn-tri-inverse pip install succeeded!" || exit $?
 
 test_tri_inv:
   <<: *build_config
+  tags:
+    - docker_npu
   stage: test
   script:
     - pytest tests/test_linalg.py
 
 test_sgl_kernels_npu:
   <<: *build_config
+  tags:
+    - docker_npu
   stage: test
   script:
     - pytest tests/sgl_kernels_npu
@@ -85,6 +89,8 @@ test_sgl_kernels_npu:
 # Test the Tilelang GDN inverse optimized implementation.
 test_tilelang_opt_gdn:
   <<: *build_config
+  tags:
+    - docker_npu
   stage: test
   script:
     - source /workspace/tilelang-ascend/set_env.sh && python -m pytest tests/tilelang_opt_gdn
@@ -92,6 +98,8 @@ test_tilelang_opt_gdn:
 
 profile_tri_inv_910B4:
   <<: *build_config
+  tags:
+    - docker_npu
   stage: profile
   script:
     - . /workspace/tilelang-ascend/set_env.sh && make profile_tri_inv
@@ -106,13 +114,9 @@ profile_tri_inv_910B4:
 
 
 profile_tri_inv_910B2:
-  image: registry.gitlab.huaweirc.ch/zrc-von-neumann-lab/tcuscan/gdn-tri-inverse:8.5.0-19032026
+  <<: *build_config
   tags:
     - docker_npu_910B2
-  before_script:
-    - source /usr/local/Ascend/ascend-toolkit/set_env.sh
-    - export CMAKE_GENERATOR="Unix Makefiles" && pip3 install -v . --extra-index-url https://download.pytorch.org/whl/cpu
-
   stage: profile
   script:
     - source /workspace/tilelang-ascend/set_env.sh && make profile_tri_inv
@@ -129,6 +133,8 @@ profile_tri_inv_910B2:
 profile_gdn_layer:
   <<: *build_config
   stage: profile
+  tags:
+    - docker_npu_910B2
   script:
     - source /workspace/tilelang-ascend/set_env.sh && make profile_gdn_layer
   artifacts:
@@ -136,5 +142,35 @@ profile_gdn_layer:
     paths:
       - bench_results_gdn*.csv
       - benchmark_gdn.log
+  when: manual
+  allow_failure: true
+
+profile_tilelang_full_gdn:
+  <<: *build_config
+  stage: profile
+  tags:
+    - docker_npu_910B2
+  script:
+    - source /workspace/tilelang-ascend/set_env.sh && python profiling/bench_tilelang_full_gdn.py
+  artifacts:
+    expire_in: 1 hours
+    paths:
+      - bench_results_*.png
+      - bench_results_*.csv
+  when: manual
+  allow_failure: true
+
+analyze_tilelang_opt_solve_tril:
+  <<: *build_config
+  tags:
+    - docker_npu_910B2
+  stage: profile
+  script:
+    - source /workspace/tilelang-ascend/set_env.sh && python profiling/analysis_tilelang_opt_solve_tril.py
+  artifacts:
+    expire_in: 1 hours
+    paths:
+      - bench_results_*.png
+      - bench_results_*.csv
   when: manual
   allow_failure: true
