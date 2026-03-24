@@ -27,9 +27,10 @@
   - [Efficiently moving diagonal blocks between L1 and L0](#efficiently-moving-diagonal-blocks-between-l1-and-l0)
   - [Double-buffering and intra-core parallel/asynchronous execution](#double-buffering-and-intra-core-parallelasynchronous-execution)
 - [End-to-end speed-up for chunkwise Gated DeltaNet](#end-to-end-speed-up-for-chunkwise-gated-deltanet)
-- [Bibliography](#bibliography)
 - [Appendix](#appendix)
+  - [Background on floating point and stability analysis](#background-on-floating-point-and-stability-analysis)
   - [Detailed stability analysis of the methods](#detailed-stability-analysis-of-the-methods)
+- [Bibliography](#bibliography)
 
 # Motivation and performance results
 
@@ -622,30 +623,9 @@ Profiing with [torch-npu](https://gitcode.com/Ascend/pytorch) profiler shows tha
 </p>
 
 
-# Bibliography
-
-**[1]** Bunch, James R., and John E. Hopcroft. "Triangular factorization and inversion by fast matrix multiplication." *Mathematics of Computation* 28.125 (1974): 231-236.
-
-**[2]** Demmel, James, Ioana Dumitriu, and Olga Holtz. "Fast linear algebra is stable." *Numerische Mathematik* 108.1 (2007): 59-91.
-
-**[3]** Yang, Songlin, Jan Kautz, and Ali Hatamizadeh. "Gated Delta Networks: Improving Mamba2 with Delta Rule." *The Thirteenth International Conference on Learning Representations*.
-
-**[4]** Gallopoulos, Efstratios, Bernard Philippe, and Ahmed H. Sameh. *Parallelism in matrix computations*. Dordrecht: Springer, 2016.
-
-**[5]** Zhang, Yu, et al. *“KIMI LINEAR: An Expressive, Efficient Attention Architecture.”* [**arXiv preprint arXiv:2510.26692**](https://arxiv.org/pdf/2510.26692), 2025.
-
-**[6]** Higham, Nicholas J. "The accuracy of solutions to triangular systems." *SIAM Journal on Numerical Analysis* 26.5 (1989): 1252-1265.
-
-**[7]** Higham, Nicholas J. *Accuracy and stability of numerical algorithms*. SIAM, 2002.
-
-**[8]** Kahan, William, and Joseph D. Darcy. "How Java’s floating-point hurts everyone everywhere." *ACM 1998 workshop on java for high-performance network computing*. Stanford University, 1998.
-
-**[9]** Zhong, S., Xu, M., Ao, T. and Shi, G., 2025. [Understanding Transformer from the Perspective of Associative Memory](https://arxiv.org/abs/2505.19488). arXiv preprint arXiv:2505.19488.
-
 # Appendix
 
-
-### Background on floating point and stability analysis
+## Background on floating point and stability analysis
 Floating point error analysis becomes more and more important in AI computing, especially with the recent trend of reducing the bits of precision in floating point formats. For the purposes of this note, we recall some basic definitions, and refer to the classic textbook of Higham [7] for further details.
 
 In the standard floating point model, the floating point representation $fl(x)$ of a real number $x$ is a $(1+p+t)$-bit number:
@@ -734,3 +714,22 @@ $$
 
 `MCH` is the only method that returns inaccurate solutions for sizes larger than `32`. The `MXR` algorithm achieves almost the same accuracy as the other, more stable methods, but at the same time it achieves the same computational efficiency as `MCH`: it requires only $\approx 2\log(n)$ matrix products, while maintaining high accuracy.
 
+# Bibliography
+
+**[1]** Bunch, James R., and John E. Hopcroft. "Triangular factorization and inversion by fast matrix multiplication." *Mathematics of Computation* 28.125 (1974): 231-236.
+
+**[2]** Demmel, James, Ioana Dumitriu, and Olga Holtz. "Fast linear algebra is stable." *Numerische Mathematik* 108.1 (2007): 59-91.
+
+**[3]** Yang, Songlin, Jan Kautz, and Ali Hatamizadeh. "Gated Delta Networks: Improving Mamba2 with Delta Rule." *The Thirteenth International Conference on Learning Representations*.
+
+**[4]** Gallopoulos, Efstratios, Bernard Philippe, and Ahmed H. Sameh. *Parallelism in matrix computations*. Dordrecht: Springer, 2016.
+
+**[5]** Zhang, Yu, et al. *“KIMI LINEAR: An Expressive, Efficient Attention Architecture.”* [**arXiv preprint arXiv:2510.26692**](https://arxiv.org/pdf/2510.26692), 2025.
+
+**[6]** Higham, Nicholas J. "The accuracy of solutions to triangular systems." *SIAM Journal on Numerical Analysis* 26.5 (1989): 1252-1265.
+
+**[7]** Higham, Nicholas J. *Accuracy and stability of numerical algorithms*. SIAM, 2002.
+
+**[8]** Kahan, William, and Joseph D. Darcy. "How Java’s floating-point hurts everyone everywhere." *ACM 1998 workshop on java for high-performance network computing*. Stanford University, 1998.
+
+**[9]** Zhong, S., Xu, M., Ao, T. and Shi, G., 2025. [Understanding Transformer from the Perspective of Associative Memory](https://arxiv.org/abs/2505.19488). arXiv preprint arXiv:2505.19488.
