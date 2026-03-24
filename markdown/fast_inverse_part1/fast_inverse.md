@@ -1,6 +1,6 @@
 # Fast matrix inversion on NPU with application to Gated DeltaNet 
 
-**TL;DR** We created a matrix inversion kernel that is **3x faster** than the current Triton kernel in sglang and vllm-ascend. The new kernel speeds up Gated DeltaNet by **30% end-to-end** on NPU while maintaining (in some cases even improving) numerical accuracy.
+**TL;DR** We created a matrix inversion kernel that is **3x faster** than the current Triton kernel in sglang and vllm-ascend. The new kernel speeds up Gated DeltaNet by **20%~40% end-to-end** on NPU while maintaining (in some cases even improving) numerical accuracy.
 
 - Date: 2026/03/20
 - Team: Aleksandros Sobczyk, Gioele Gottardo, Filip Skogh, Mirko De Vita, Christos Konstantinos Matzoros, Anastasios Zouzias, Jiawei Zhuang
@@ -66,7 +66,7 @@ It is also **3/3/1.5x faster** than the [optimized tilelang-ascend implementatio
 The new kernel also gives a substantial speedup for the entire GDN layer (extracted from sglang code, other non-inverse parts still use original triton impl):
 
 <p align="center">
-  <img src="./fig/e2e_gdn.png" alt="e2e_gdn" style="width: 70%; max-width: 600px;" />
+  <img src="./fig/gdn_breakdown.png" alt="e2e_gdn" style="width: 70%; max-width: 600px;" />
 </p>
 
 # Why need inverse? Brief recap of math and code
@@ -612,7 +612,7 @@ Last but not least, we measure the performance of chunkwise Gated DeltaNet. We u
 To avoid the transpsition overhead we rewrote our kernel so that it can natively read the BSND layout. This was achieved by changing the strides in the memory accesses in PTO-ISA so that the reads are redirected to the correct address. This leads to a 1.18x speedup end-to-end.
 
 <p align="center">
-  <img src="./fig/GDN-layer-e2e.png" alt="gdn-layer-e2e"style="width: 80%; max-width: 600px;" />
+  <img src="./fig/GDN-layer-e2e.png" alt="GDN-layer-e2e"style="width: 60%; max-width: 600px;" />
 </p>
 
 Profiing with [torch-npu](https://gitcode.com/Ascend/pytorch) profiler shows that the chain of small triton kernels are bounded by kernel launc of PyTorch eager mode, and the actual kernel execution takes little time. The host overhead can be much reduced by recording multiple kernels with [aclgraph](https://gitcode.com/Ascend/torchair/). If only considering kernel execution time, swaping-in our best inverse kernel speeds-up GDN layer by 1.4x: 
