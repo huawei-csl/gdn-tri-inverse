@@ -245,13 +245,13 @@ def tri_inv_mcs(U: np.ndarray) -> np.ndarray:
 ## A very fast, matrix product-based algorithm
 The main drawback of the MCS algorithm is that it executes $O(n)$ matrix products of size $n\times n$. 
 The authors of [9] propose an alternative algorithm, taking advantage of the fact that the size of matrix A is always chosen as a power of 2 (usually 16, 32, or 64).
-<!-- 
+
 <p align="center">
-  <img src="./fig/invtrick_formula1.png" alt="invtrick_formula1" width="70%" />
+  <img src="./fig/invtrick_formula1.png" alt="invtrick_formula1" width="100%" />
 </p>
 <p align="center">
-  <img src="./fig/invtrick_formula2.png" alt="invtrick_formula2" width="70%" />
-</p> -->
+  <img src="./fig/invtrick_formula2.png" alt="invtrick_formula2" width="100%" />
+</p>
 
 It comes from the [Cayley-Hamilton theorem](https://en.wikipedia.org/wiki/Cayley%E2%80%93Hamilton_theorem), which gives a formulation to compute the inverse of a matrix with respect to its characteristic polynomial, i.e.:
 $$
