@@ -14,11 +14,22 @@
 
 - [Motivation and performance results](#motivation-and-performance-results)
 - [Why need inverse? Brief recap of math and code](#why-need-inverse-brief-recap-of-math-and-code)
-- [Fast inversion algorithm using matrix units](#fast-inversion-algorithm-using-matrix-units)
-- [NPU kernel implementation in PTO Python DSL](#npu-kernel-implementation-in-pto-python-dsl)
-- [Improving numerical stability](#improving-numerical-stability)
-
-For detailed kernel optimization and numerical stability analysis, see [Part 2](../part2/fast_inverse_part2.md)
+- [Designing fast and accurate triangular inversion algorithms using matrix units](#designing-fast-and-accurate-triangular-inversion-algorithms-using-matrix-units)
+  - [AI Accelerators and Ascend NPUs](#ai-accelerators-and-ascend-npus)
+  - [Desired algorithm properties](#desired-algorithm-properties)
+  - [A first attempt via backward substition: Vectorized and Matrix-based Column-Sweep (VCS and MCS)](#a-first-attempt-via-backward-substition-vectorized-and-matrix-based-column-sweep-vcs-and-mcs)
+  - [A very fast, matrix product-based algorithm](#a-very-fast-matrix-product-based-algorithm)
+  - [A more stable matrix-based algorithm: Revisiting Bunch and Hopcroft (MBH)](#a-more-stable-matrix-based-algorithm-revisiting-bunch-and-hopcroft-mbh)
+  - [The best of both worlds: combining the speed of MCH and the stability of MBH](#the-best-of-both-worlds-combining-the-speed-of-mch-and-the-stability-of-mbh)
+  - [Summary of methods](#summary-of-methods)
+- [Deep-dive on Ascend 910B implementations](#deep-dive-on-ascend-910b-implementations)
+  - [Low-level implemention of MXR using PTO-ISA](#low-level-implemention-of-mxr-using-pto-isa)
+  - [Efficiently moving diagonal blocks between L1 and L0](#efficiently-moving-diagonal-blocks-between-l1-and-l0)
+  - [Double-buffering and intra-core parallel/asynchronous execution](#double-buffering-and-intra-core-parallelasynchronous-execution)
+- [End-to-end speed-up for chunkwise Gated DeltaNet](#end-to-end-speed-up-for-chunkwise-gated-deltanet)
+- [Bibliography](#bibliography)
+- [Appendix](#appendix)
+  - [Detailed stability analysis of the methods](#detailed-stability-analysis-of-the-methods)
 
 # Motivation and performance results
 
@@ -46,8 +57,6 @@ To resolve this major bottleneck, we provide a **fast and numerically stable** t
 
 (The Y-axis "effective bandwidth" is inversely proportional to kernel time; the theoretical peak BW assumes only reading inputs and writing outputs while ignoring compute, in which case BW can approach HBM peak ~1 TB/s.)
 
-
-
 It is also **3/3/1.5x faster** than the [optimized tilelang-ascend implementation](https://github.com/tile-ai/tilelang-ascend/tree/786a5ef0df8e98da97bcd51440ab55a8c8253e2c/examples/linear_attention_and_rnn/opt_gdn) for chunk sizes 32/64/128 respectively, and is more flexible w.r.t. shapes and data layouts (the tilelang kernel uses a fully static shape and an easier ["head-first" layout](https://github.com/fla-org/flash-linear-attention/pull/338), so it cannot be used in production yet).
 
 <p align="center">
@@ -59,8 +68,6 @@ The new kernel also gives a substantial speedup for the entire GDN layer (extrac
 <p align="center">
   <img src="./fig/e2e_gdn.png" alt="e2e_gdn" style="width: 70%; max-width: 600px;" />
 </p>
-
-(TODO: shorter legend name)
 
 # Why need inverse? Brief recap of math and code
 
@@ -108,8 +115,10 @@ On GPU, fused Triton kernels are available: [solve_tril](https://github.com/fla-
 On NPU, production frameworks like vllm/sglang use triton-ascend to compile [a similar kernel](https://github.com/sgl-project/sgl-kernel-npu/blob/2026.03.01.post1/python/sgl_kernel_npu/sgl_kernel_npu/fla/solve_tril.py).
 
 
+# Designing fast and accurate triangular inversion algorithms using matrix units
 
 ## AI Accelerators and Ascend NPUs
+
 Modern hardware accelerators incorporate different types of compute units to satisfy the requirements of AI applications. Typically, they contain:
 - Matrix multiplication units, which perform small matrix products $C=AB$ as a single instruction.
 - SIMT/SIMD cores (vector-like processors) used for element-wise arithmetic/logic instructions, activation functions (ReLU, GeLU, etc.), and many other operations.
@@ -124,8 +133,7 @@ For more information on the Ascend architecture we refer to the [official docume
   <img src="./fig/ascend-architecture.png" alt="mch-instabinity"  style="width: 80%; max-width: 600px; background-color: rgb(255, 255, 255);" />
 </p>
 
-
-# Designing fast and accurate triangular inversion algorithms using matrix units
+## Desired algorithm properties
 
 Designing efficient algorithms on modern HW is a challenging task, which entails optimizing different aspects (simultaneously):
 1) *Accuracy* and *numerical stability*: The algorithms need to return accurate solutions, and to be robust and reliable against numerical errors for all possible inputs.
@@ -336,11 +344,10 @@ This trivial implementation (without double-buffering and further optimization) 
 </p>
 
 
-### Analysis
+### Theoretical Analysis
 
 - **Complexity**: $\approx 2\log_2(n)$ matrix products of size $n\times n$.
 - **Stability**: This algorithm is  **numerically unstable**. 
-
 
 The effect of the instability can be better realized with a numerical example. In this figure, we test the maximum element-wise relative error of four different methods to compute the inverse of the matrix $I+L$, where $L$ is strictly lower-triangular with random uniform elements between $[0,1/2)$ (such values are realistic for GDN networks). All three algorithms `np_inv`, `VCS`, and `MCS` return at least seven digits of accuracy in `float32`, and at least three digits of accuracy in `float16`, for all matrix sizes `16,32,64,128`. However, the numerical accuracy of MCH explodes very quickly for larger matrix sizes. For `n=128`, the max relative error of MCH is more than $10^3$ in `float32`, while for `float16` the returned solution contains `NaN` values.
 
@@ -371,7 +378,8 @@ L^{-1}_{ones} = \begin{pmatrix}
 $$
 The condition number of the matrix $L_{ones}$ is very small. However, during the execution of the algorithm, already at the *fourth iteration*, the matrix $Y$ will contain entries that overflow to **inf** in **fp16** precision! Eventually, by using standard tools for numerical analysis, one can show that the floating point errors of this algorithm grow *exponentially* with respect to $n$ (this is left as an exercise for the interested readers).
 
-### A more stable matrix-based algorithm: Revisiting Bunch and Hopcroft (MBH)
+## A more stable matrix-based algorithm: Revisiting Bunch and Hopcroft (MBH)
+
 While the `MCH` algorithm is very fast and efficiently utilizes matrix products, its severe instability makes it unusable in practice. Thankfully, we can achieve high accuracy and good performance simultaneously by using an alternative algorithm.
 
 A different way to use matrix products as basic operations to invert a triangular matrix is the following:
@@ -420,8 +428,7 @@ Analysis:
 - **Complexity**: $\approx 2\log_2(n)$ matrix products of size $n\times n$.
 - **Stability**: The algorithm is **logarithmically stable** (a proof can be found in [2]). 
 
-
-### The best of both worlds: combining the speed of MCH and the stability of MBH
+## The best of both worlds: combining the speed of MCH and the stability of MBH
 
 We finally describe a hybrid algorithm that takes advantage of both MBH and MCH. The idea is the following:
 
@@ -446,8 +453,10 @@ def tri_inv_mxr(A):
     return X
 ```
 
-</details>
+A clean implementation of MXR algorithm in PTO Python DSL is available in 
+[fast_inverse/block_inversion](https://github.com/huawei-csl/pto-dsl/tree/0.1.1/examples/aot/fast_inverse/block_inversion) (educational purpose without performance tuning, and only recurses one-level -- see later section for fully optimized version)
 
+</details>
 
 
 ## Summary of methods
@@ -461,12 +470,12 @@ Below, we provide a summary of the methods discussed previously in terms of numb
 | **MBH** | Unrolled recursion (fast triangular inversion) | **$\approx 2\log n$** | log-stable [2] | Needs structured DataCopies for efficient implementation |
 | **MXR** | Mixed MCH+MBH | $\approx 2\log n$  | log-stable [2] | Combines stability of MBH and speed of MCH. |
 
-
 # Deep-dive on Ascend 910B implementations
 
-In this section we provide details on low-level NPU implementations using PTO-ISA as the main framework.
+In this section we provide details on low-level NPU implementations using PTO-ISA as the programming framework.
 
-### Low-level implemention of MXR using PTO-ISA
+## Low-level implemention of MXR using PTO-ISA
+
 Recall that the `MXR` algorithm has two parts:
 1. The first part implements `MCH` to invert the small $(16\times 16)$ diagonal blocks of the matrix.
 2. The second part uses the unrolled `MBH` algorithm to assemble the entire inverse.
@@ -500,7 +509,8 @@ The reason why `MCH` is used on $16\times 16$ blocks is two-fold:
 - The `AIC` (Cube) cores of `Ascend` partition the input matrices in fractals of size $16\times 16$ for `fp16` data types. These fractals are the **smallest** unit that we can manipulate with standard data-copy / data-load instructions in `PTO-ISA`. Specifically, `TMOV` and `TEXTRACT` instructions.
 - Due to the exponentially-increasing numerical instability, $16\times 16$ seems to be the largest "block-size" that we can efficiently invert using `MCH` while still retaining acceptable numerical behaviour (not optimal, but decently close to the machine precision).
 
-### Key subroutines: Efficiently moving diagonal fractals / blocks between L1 and L0
+## Efficiently moving diagonal blocks between L1 and L0
+
 For step `1.` we need to implement an efficient method that copies the diagonal fractals of the input matrix from the `L1` memory to `L0A/L0B` memories. This can be done as follows (for simplicity, we hard-code input type to float 16 and fractal size to $16\times 16$, and we only show the case of `L0A`-"left tile"):
 ```cpp
 /*
@@ -579,7 +589,8 @@ A_{00} & 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} \\
 \end{pmatrix}.
 $$
 
-### Double-buffering and intra-core parallel/asynchronous execution
+## Double-buffering and intra-core parallel/asynchronous execution
+
 In order to increase performance, we need to take advantage of asynchronous execution of data-movements (`TMOVE` / `TEXTRACT`) between the L1 and L0 cache levels  and compute instructions (`TMATMUL`) within the same `AIC` core. In the following figure we describe an example of how a naive serial execution of the `MCH` iteration can be executed efficiently, by having two buffers for `L0A`, `L0B`, and `L0C` matrices, and by overlapping computation and data-movements. For example, recall that the first step of the `MCH` iteration is the computation of $Y^2$. In PTO-ISA, it can be executed with the following instructions:
 ```cpp
 TMOV(L0A_tile, Y_L1_tile);
@@ -594,25 +605,21 @@ By carefully identifying the dependencies between operations/memory accesses, an
 </p>
 
 
+# End-to-end speed-up for chunkwise Gated DeltaNet
 
-## Fused chunkwise algorithm for Gated DeltaNet
+Last but not least, we measure the performance of chunkwise Gated DeltaNet. We use as a baseline the official triton kernels for SGLang [here](https://github.com/sgl-project/sgl-kernel-npu/blob/2026.03.01.post1/python/sgl_kernel_npu/sgl_kernel_npu/fla/chunk.py#L215), and we replace the triangular inverse with our fastest algorithm. One main challenge here is that in the triton kernel uses a different data layout for the inputs that correspond to the "seq-first" layout (`[batch, seq, head, hidden]`, marked as "BSND" below). This means that to integrate our kernel into SGLang we need two additonal transpose operations. With the additional tranposes we only acheived end-to-end `1.08x` speedup compared to triton.
 
-Last but not least, we measure the performance of chunked Gated DeltaNet. We use as a baseline the official triton kernels for SGLang [here](https://github.com/sgl-project/sgl-kernel-npu/blob/main/python/sgl_kernel_npu/sgl_kernel_npu/fla/chunk.py#L215), and we replace the triangular inverse with our fastest algorithm. One main challenge here is that in the triton kernel uses a different data layout for the inverse that correspond to the BSND format for the GDN layer. Thius means that to integrate our kernel into the triton environment we need two additonal transpose operations. Due to the the additional operations we acheive end-to-end `1.08x` speedup compared to triton.
-
-To avoid the transpsition overhead we rewrote our kernel so that it can natively read the BSND layout. This was achieved by changing the strides in the memory accesses in PTO-ISA so that the reads are redirected to the correct address. This lead to a 1.18x speedup end-to-end.
+To avoid the transpsition overhead we rewrote our kernel so that it can natively read the BSND layout. This was achieved by changing the strides in the memory accesses in PTO-ISA so that the reads are redirected to the correct address. This leads to a 1.18x speedup end-to-end.
 
 <p align="center">
   <img src="./fig/GDN-layer-e2e.png" alt="gdn-layer-e2e"style="width: 80%; max-width: 600px;" />
 </p>
 
-If we consider only the kernel execution and ignore the host ovehead we get the following breakdown:
+Profiing with [torch-npu](https://gitcode.com/Ascend/pytorch) profiler shows that the chain of small triton kernels are bounded by kernel launc of PyTorch eager mode, and the actual kernel execution takes little time. The host overhead can be much reduced by recording multiple kernels with [aclgraph](https://gitcode.com/Ascend/torchair/). If only considering kernel execution time, swaping-in our best inverse kernel speeds-up GDN layer by 1.4x: 
 
 <p align="center">
   <img src="./fig/gdn_breakdown.png" alt="gdn-breakdown" style="width: 80%; max-width: 600px;" />
 </p>
-
-
-
 
 
 # Bibliography
@@ -722,7 +729,7 @@ $$
 
 
 <p align="center">
-  <img src="./fig/total-errors.png" alt="total-errors" style="width: 80%; max-width: 800px;" />
+  <img src="./fig/errors-fp16.png" alt="total-errors" style="width: 80%; max-width: 800px;" />
 </p>
 
 `MCH` is the only method that returns inaccurate solutions for sizes larger than `32`. The `MXR` algorithm achieves almost the same accuracy as the other, more stable methods, but at the same time it achieves the same computational efficiency as `MCH`: it requires only $\approx 2\log(n)$ matrix products, while maintaining high accuracy.
