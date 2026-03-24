@@ -67,7 +67,7 @@ It is also **3/3/1.5x faster** than the [optimized tilelang-ascend implementatio
 The new kernel also gives a substantial speedup for the entire GDN layer (extracted from SGLang code; other non-inverse parts still use the original Triton implementation):
 
 <p align="center">
-  <img src="./fig/gdn_breakdown.png" alt="e2e_gdn" style="width: 70%; max-width: 600px;" />
+  <img src="./fig/gdn_breakdown.png" alt="e2e_gdn" style="width: 60%; max-width: 600px;" />
 </p>
 
 # Why do LLMs need matrix inverse? Brief recap of math and code
@@ -131,7 +131,7 @@ Each AI-core consists of two *AIV* (vector cores) and one *AIC* (Cube) core. Bot
 For more information on the Ascend architecture we refer to the [official documentation](https://www.hiascend.com/document/detail/en/canncommercial/800/opdevg/Ascendcopdevg/atlas_ascendc_10_0008.html).
 
 <p align="center">
-  <img src="./fig/ascend-architecture.png" alt="Ascend architecture diagram" style="width: 80%; max-width: 600px; background-color: rgb(255, 255, 255);" />
+  <img src="./fig/ascend-architecture.png" alt="Ascend architecture diagram" style="width: 60%; max-width: 600px; background-color: rgb(255, 255, 255);" />
 </p>
 
 ## Desired algorithm properties
@@ -180,22 +180,22 @@ def tri_inv_vcs(U: np.ndarray) -> np.ndarray:
 </details>
 
 The main problem of this method is that it does not take advantage of matrix products and the AIC cores.
-However, it is known that it actually can be written in a matrix formulation (see Eqs. 3.8/3.9 in Section 3.2.1 of [4]). It is best explained by an example. 
+However, it is known that it actually can be written in a matrix formulation (see Eqs. 3.8/3.9 in Section 3.2.1 of [4]). It is best explained by an example.
 
 Let A be a matrix of size 3 as below:
 
-$$
+```math
 A =
 \begin{pmatrix}
 1 & 2 & 3 \\
 0 & 1 & 4 \\
 0 & 0 & 1
 \end{pmatrix}.
-$$
+```
 
 One can easily verify that the inverse of A can be written as
 
-$$
+```math
 A^{-1} = M_1 M_2 =
 \begin{pmatrix}
 1 & -2 & 0 \\
@@ -206,7 +206,7 @@ A^{-1} = M_1 M_2 =
 0 & 1 & -4 \\
 0 & 0 & 1
 \end{pmatrix}.
-$$
+```
 
 In general, the `MCS` algorithm below generates the matrices $M_{n-1}M_{n-2}\dots M_{1}$ and performs the chained matrix products. The main advantage of this approach compared to `VCS` is that `MCS` can take advantage of a matrix multiplication unit. One drawback is that, for matrix size $n$, it requires $n-1$ matrix products.
 
@@ -247,16 +247,17 @@ The main drawback of the MCS algorithm is that it executes $O(n)$ matrix product
 The authors of [9] propose an alternative algorithm, taking advantage of the fact that the size of matrix A is always chosen as a power of 2 (usually 16, 32, or 64).
 
 <p align="center">
-  <img src="./fig/invtrick_formula1.png" alt="invtrick_formula1" width="100%" />
+  <img src="./fig/invtrick_formula1.png" alt="invtrick_formula1" width="70%" />
 </p>
 <p align="center">
-  <img src="./fig/invtrick_formula2.png" alt="invtrick_formula2" width="100%" />
+  <img src="./fig/invtrick_formula2.png" alt="invtrick_formula2" width="70%" />
 </p>
 
 It comes from the [Cayley-Hamilton theorem](https://en.wikipedia.org/wiki/Cayley%E2%80%93Hamilton_theorem), which gives a formulation to compute the inverse of a matrix with respect to its characteristic polynomial, i.e.:
+
 $$
-(I+U)^{-1}=I-U+U^2-U^3+\dots+(-1)^nU^n.
-$$ 
+(I+U)^{-1}=I-U+U^2-U^3+\cdots+(-1)^nU^n.
+$$
 
 Intuitively, this is analogous to [matrix power series](https://en.wikipedia.org/wiki/Analytic_function_of_a_matrix#Power_series) together with [fast exponentiation by squaring](https://en.wikipedia.org/wiki/Exponentiation_by_squaring). We will refer to this algorithm as "MCH", from the acronym "Matrix Cayley-Hamilton".
 In total, it requires $O(\log(n))$ matrix products:
@@ -357,25 +358,27 @@ The effect of the instability is easier to see with a numerical example. In this
 
 
 The source of this instability is in fact the same one that makes the algorithm fast: the recursive-squaring part. To give more intuition, consider the following "bad example" where the errors can grow arbitrarily. Such an example is the all-ones lower-triangular matrix of size $n\times n$, whose inverse is also easy to derive analytically:
-$$
+
+```math
 L_{ones} = \begin{pmatrix}
-1 & 0 & 0 & 0 & ... & 0 \\
-1 & 1 & 0 & 0 & ... & 0 \\
-1 & 1 & 1 & 0 & ... & 0 \\
+1 & 0 & 0 & 0 & \cdots & 0 \\
+1 & 1 & 0 & 0 & \cdots & 0 \\
+1 & 1 & 1 & 0 & \cdots & 0 \\
 \vdots & \vdots & \vdots & \ddots & 0 & 0 \\
-1 & 1 & 1 & ... & 1 & 0 \\
-1 & 1 & 1 & ... & 1 & 1 \\
+1 & 1 & 1 & \cdots & 1 & 0 \\
+1 & 1 & 1 & \cdots & 1 & 1 \\
 \end{pmatrix}
 ,\qquad
 L^{-1}_{ones} = \begin{pmatrix}
-1 & 0 & 0 & 0 & ... & 0 \\
--1 & 1 & 0 & 0 & ... & 0 \\
-0 & -1 & 1 & 0 & ... & 0 \\
+1 & 0 & 0 & 0 & \cdots & 0 \\
+-1 & 1 & 0 & 0 & \cdots & 0 \\
+0 & -1 & 1 & 0 & \cdots & 0 \\
 \vdots & \ddots & \ddots & \ddots & 0 & 0 \\
-0 & ... & 0 & -1 & 1 & 0 \\
-0 & ... & 0 & 0 & -1 & 1 \\
+0 & \cdots & 0 & -1 & 1 & 0 \\
+0 & \cdots & 0 & 0 & -1 & 1 \\
 \end{pmatrix}
-$$
+```
+
 The condition number of the matrix $L_{ones}$ is very small. However, during the execution of the algorithm, already at the *fourth iteration*, the matrix $Y$ will contain entries that overflow to **inf** in **fp16** precision! Eventually, by using standard tools for numerical analysis, one can show that the floating point errors of this algorithm grow *exponentially* with respect to $n$ (this is left as an exercise for the interested readers).
 
 ## A more stable matrix-based algorithm: Revisiting Bunch and Hopcroft (MBH)
@@ -383,7 +386,19 @@ The condition number of the matrix $L_{ones}$ is very small. However, during the
 While the `MCH` algorithm is very fast and efficiently utilizes matrix products, its severe instability makes it unusable in practice. Thankfully, we can achieve high accuracy and good performance simultaneously by using an alternative algorithm.
 
 A different way to use matrix products as basic operations to invert a triangular matrix is the following:
-$$A^{-1} = \begin{pmatrix} A_{11} & A_{12} \\ 0 & A_{22}\end{pmatrix}^{-1} = \begin{pmatrix} A^{-1}_{11} & -A^{-1}_{11}A_{22}A_{22}^{-1} \\ 0 & A_{22}^{-1}\end{pmatrix}$$
+
+```math
+A^{-1} =
+\begin{pmatrix}
+A_{11} & A_{12} \\
+0 & A_{22}
+\end{pmatrix}^{-1}
+=
+\begin{pmatrix}
+A^{-1}_{11} & -A^{-1}_{11}A_{12}A_{22}^{-1} \\
+0 & A_{22}^{-1}
+\end{pmatrix}
+```
 
 At each step, it involves computing the inverses of two matrices of half the size, and two matrix products of half the size.
 
@@ -468,7 +483,7 @@ Below, we provide a summary of the methods discussed previously in terms of the 
 | **MCS** | Matrix-based column-sweep | $n-1$ | stable [6] | One MM per output column |
 | **MCH** | Cayley–Hamilton / inverse trick | **$\approx 2\log n $** | unstable | Very fast and simple, but unstable |
 | **MBH** | Unrolled recursion (fast triangular inversion) | **$\approx 2\log n$** | log-stable [2] | Needs structured DataCopies for efficient implementation |
-| **MXR** | Mixed MCH+MBH | $\approx 2\log n$  | log-stable [2] | Combines stability of MBH and speed of MCH. |
+| **MXR** | Mixed MCH+MBH | $\approx 2\log n$ | log-stable [2] | Combines stability of MBH and speed of MCH. |
 
 # Deep-dive on Ascend 910B implementations
 
@@ -484,23 +499,33 @@ For example, if every matrix multiplication instruction computes the product of 
 
 To that end, we study an unrolled version of this algorithm, where we first copy the diagonal blocks of the matrix in two new matrices. Before diving into the details, we define some notation.
 
-- Assuming some block_size$\in\{2, 4, 8, …, n/2\}$, we define the matrix
-    $$
-    D=\begin{pmatrix} X_{0,0} & 0 & \ldots &0 & 0 \\0 & X_{1,1} &\ldots & 0 & 0 \\0 & 0 & \ddots & 0 & 0 \\0 & 0 & \ldots & X_{b-2,b-2} & 0 \\ 0 & 0 & \ldots & 0 & X_{b-1,b-1}\end{pmatrix},
-    $$ 
-    that contains only the diagonal blocks of the matrix $X$. Each block $X_{i,i}$ has size $\text{block\_size} \times \text{block\_size}$, and there are $b=n/\text{block\_size}$ blocks in total.
-    
-- We now define two other block-diagonal matrices:
-    - $L_X$ : Contains the “even” diagonal blocks: $[X_{0,0}, 0, X_{2,2}, 0, \ldots]$
-    - $R_X$ : Contains the “odd” diagonal blocks: $[0, X_{1,1}, 0, X_{3,3}, 0, \ldots]$
-    - Clearly, $L_X+R_X=D$.
+Assuming some block\_size $\in\{2, 4, 8, \ldots, n/2\}$, we define the matrix
+
+```math
+D=\begin{pmatrix}
+X_{0,0} & 0 & \cdots & 0 & 0 \\
+0 & X_{1,1} & \cdots & 0 & 0 \\
+0 & 0 & \ddots & 0 & 0 \\
+0 & 0 & \cdots & X_{b-2,b-2} & 0 \\
+0 & 0 & \cdots & 0 & X_{b-1,b-1}
+\end{pmatrix},
+```
+
+Here, $D$ contains only the diagonal blocks of the matrix $X$. Writing $m$ for the block size, each block $X_{i,i}$ is $m\times m$, and there are $b=n/m$ blocks in total.
+
+We now define two other block-diagonal matrices:
+
+- $L_X$: Contains the “even” diagonal blocks: $[X_{0,0}, 0, X_{2,2}, 0, \ldots]$
+- $R_X$: Contains the “odd” diagonal blocks: $[0, X_{1,1}, 0, X_{3,3}, 0, \ldots]$
+- Clearly, $L_X+R_X=D$.
+
 A high-level description of the algorithm follows. We refer to it as "MBH", since one of the first appearances in the literature is by Bunch and Hopcroft [1].
 
 **Algorithm Unrolled-MBH $(U)$:**
 1. Initialize $X=I_{n\times n}$ and block_size=1
 2. While block_size < n:
-    1. Create $L_X,R_X$  as defined above, using structured DataCopy for efficiency.
-    2. Update the matrix $X\gets  L_X + R_X-L_X \cdot U\cdot  R_X$
+    1. Create $L_X,R_X$ as defined above, using structured DataCopy for efficiency.
+    2. Update the matrix $X\gets L_X + R_X-L_X \cdot U\cdot R_X$
     3. block_size ← 2 * block_size
 3. Return $X$.
 
@@ -532,7 +557,8 @@ AICORE inline void CopyDiagonalFractalsL1ToL0(SrcL1TileT src, DstL0TileT dst) {
 }
 ```
 Using this method, we can extract the $16\times 16$ diagonal blocks of a $64\times 64$ matrix in the following form:
-$$
+
+```math
 A = \begin{pmatrix}
 A_{00} & A_{01} & A_{02} & A_{03} \\
 0_{16\times 16} & A_{11} & A_{12} & A_{13} \\
@@ -548,12 +574,13 @@ A_{00} & 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} \\
 0_{16\times 16} & 0_{16\times 16} & A_{12} & 0_{16\times 16} \\
 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} & A_{13} \\
 \end{pmatrix}
-$$
+```
 
 Each of the blocks $A_{00},A_{11},A_{22},A_{33}$ is completely independent, so we can invert them in parallel using the `MCH` algorithm and exploiting matrix products of size $64\times 64$.
 
 For step `2.`, we need a more involved method that copies either the `odd-indexed` or the `even-indexed` diagonal blocks of a matrix, where the block size varies between $16\times 16$ and $64\times 64$. We call this method `CopyOddOrEvenDiagonalBlocksL1ToL0`. For example, this method can copy the `odd` diagonal blocks of size $16\times 16$ of a $64\times 64$ matrix from `L1` to `L0` as follows:
-$$
+
+```math
 A = \begin{pmatrix}
 A_{00} & A_{01} & A_{02} & A_{03} \\
 0_{16\times 16} & A_{11} & A_{12} & A_{13} \\
@@ -569,9 +596,10 @@ A_{00} & A_{01} & A_{02} & A_{03} \\
 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} \\
 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} & A_{33} \\
 \end{pmatrix},
-$$
+```
 or the `even` blocks:
-$$
+
+```math
 A = \begin{pmatrix}
 A_{00} & A_{01} & A_{02} & A_{03} \\
 0_{16\times 16} & A_{11} & A_{12} & A_{13} \\
@@ -587,7 +615,7 @@ A_{00} & 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} \\
 0_{16\times 16} & 0_{16\times 16} & A_{22} & 0_{16\times 16} \\
 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} & 0_{16\times 16} \\
 \end{pmatrix}.
-$$
+```
 
 ## Double-buffering and intra-core parallel/asynchronous execution
 
@@ -612,13 +640,13 @@ Last but not least, we measure the performance of chunkwise Gated DeltaNet. We u
 To avoid the transposition overhead we rewrote our kernel so that it can natively read the BSND layout. This was achieved by changing the strides in the memory accesses in PTO-ISA so that the reads are redirected to the correct address. This leads to a 1.18x speedup end-to-end.
 
 <p align="center">
-  <img src="./fig/GDN-layer-e2e.png" alt="GDN-layer-e2e" style="width: 60%; max-width: 600px;" />
+  <img src="./fig/GDN-layer-e2e.png" alt="GDN-layer-e2e" style="width: 50%; max-width: 600px;" />
 </p>
 
 Profiling with [torch-npu](https://gitcode.com/Ascend/pytorch) shows that the chain of small Triton kernels is bounded by kernel launch overhead in PyTorch eager mode, and the actual kernel execution takes little time. The host overhead can be much reduced by recording multiple kernels with [aclgraph](https://gitcode.com/Ascend/torchair/). If we consider only kernel execution time, swapping in our best inverse kernel speeds up the GDN layer by 1.4x: 
 
 <p align="center">
-  <img src="./fig/gdn_breakdown.png" alt="gdn-breakdown" style="width: 80%; max-width: 600px;" />
+  <img src="./fig/gdn_breakdown.png" alt="gdn-breakdown" style="width: 60%; max-width: 600px;" />
 </p>
 
 
@@ -628,46 +656,62 @@ Profiling with [torch-npu](https://gitcode.com/Ascend/pytorch) shows that the ch
 Floating point error analysis becomes more and more important in AI computing, especially with the recent trend of reducing the bits of precision in floating point formats. For the purposes of this note, we recall some basic definitions, and refer to the classic textbook of Higham [7] for further details.
 
 In the standard floating point model, the floating point representation $fl(x)$ of a real number $x$ is a $(1+p+t)$-bit number:
-$$fl(x) = \pm 2^e\times \left(\frac{m_1}{2} + \frac{m_2}{2^2}+...+\frac{m_t}{2^t}\right),$$
+
+```math
+fl(x) = \pm 2^e\times \left(\frac{m_1}{2} + \frac{m_2}{2^2}+\cdots+\frac{m_t}{2^t}\right),
+```
+
 where:
 - one bit stores the sign of the number $\pm$,
 - $p$ bits are used to store the (integral) exponent $e$ in the so-called "biased" format,
 - $t$ bits $m_1,m_2,...,m_t$ are used for the *significand* (also known as the *mantissa*).
 
-For all *normalized* numbers it holds that: 
-$$
+For all *normalized* numbers it holds that:
+
+```math
 fl(x)=(1+\theta)x,
-$$ 
-where 
-$$
+```
+
+where
+
+```math
 |\theta|\leq 2^{-t}.
-$$
+```
+
 Recall that, roughly speaking, normalized numbers are all numbers that can be represented within the given exponent range.
 
 
 Given two (normalized) floating point numbers $a,b$, floating point operations $\circ\in\{+,-,\times,/\}$ and square roots are assumed to satisfy:
-$$ 
+
+```math
 fl(a \circ b) = (1+\theta)(a\circ b),
-$$
+```
+
 and
-$$
+
+```math
 fl\left(\sqrt{a}\right)=(1+\theta)\sqrt{a},
-$$
+```
+
 where, again, $|\theta|\leq 2^{-t}$.
 
 It is known that different numerical algorithms satisfy different *stability* properties, i.e., some algorithms are more prone to errors than others, even if they theoretically solve the exact same problem. A classic example is the Gram-Schmidt orthogonalization procedure for computing an orthonormal basis, which is known to be very unstable unless properly modified.
 
-For the purposes of this article, we use the following notions of stability specifically for computing the **inverse of a triangular matrix** (more details can be found in [7] and [2], and references therein). For what follows, $c_1$ and $c_2$ are global constants (independent of the matrix size $n$), and $\kappa(A)=\|A\|\|A^{-1}\|\geq 1$ is the 2-norm condition number of $A$. 
+For the purposes of this article, we use the following notions of stability specifically for computing the **inverse of a triangular matrix** (more details can be found in [7] and [2], and references therein). For what follows, $c_1$ and $c_2$ are global constants (independent of the matrix size $n$), and $\kappa(A)=\lVert A\rVert\,\lVert A^{-1}\rVert\geq 1$ is the 2-norm condition number of $A$. 
 
 - Given a matrix $A$ of size $n$, the goal is to approximate its inverse with a matrix $\widetilde A^{-1}$.
 - **Numerically stable** inversion algorithms return solutions that satisfy:
+
 $$
-\| A^{-1} - \widetilde A^{-1}\| \leq c_1 n^{c_2} \cdot 2^{-t} \cdot \kappa(A)\cdot\|A^{-1}\| 
+\| A^{-1} - \widetilde A^{-1}\| \leq c_1 n^{c_2} \cdot 2^{-t} \cdot \kappa(A)\cdot\|A^{-1}\|
 $$
+
 - **Logarithmically stable** algorithms, on the other hand, satisfy:
+
 $$
-\| A^{-1} - \widetilde A^{-1}\| \leq c_1 n^{c_2} \cdot 2^{-t} \cdot \kappa^{P(\log(n))}(A)\cdot\|A^{-1}\|, 
+\| A^{-1} - \widetilde A^{-1}\| \leq c_1 n^{c_2} \cdot 2^{-t} \cdot \kappa^{P(\log(n))}(A)\cdot\|A^{-1}\|,
 $$
+
 where $P(x)$ is a low-degree polynomial.
 - **Unstable** algorithms do not satisfy any of these bounds (for example, errors can grow exponentially in $n$).
 
@@ -676,7 +720,7 @@ Evidently, logarithmically-stable algorithms are more prone to errors than numer
 
 ## Detailed stability analysis of the methods
 
-Here we give some more details regarding the algorithms' numerical stability for different precisions. We focus on `float16` and `float32` data types (currently supported by Ascend 910B). 
+Here we give some more details regarding the algorithms' numerical stability for different precisions. We focus on `float16` and `float32` data types (currently supported by Ascend 910B).
 
 <!-- The mathematical analysis of the “forward” and “backward” errors that are guaranteed by each method can be found in the corresponding bibliography:
 
@@ -692,14 +736,19 @@ A = 0.5 * np.tril(np.random.rand(n, n), k=-1)
 
 In the following plots we report three different types of errors for `float16` and `float32` data types. We denote by $A^{-1}$  the true inverse of the matrix $A=I+L$, and by $\widetilde A^{-1}$ the inverse returned by each method.
 - **Max element-wise absolute error**. This is mathematically equivalent to:
+
 $$
 \max_{i,j} |A^{-1}_{i,j} - \widetilde A^{-1}_{i,j}|.
 $$
+
 - **Max element-wise relative error**. This is defined as:
+
 $$
 \max_{i,j<i} \frac{|A^{-1}_{i,j} - \widetilde A^{-1}_{i,j}|}{|A^{-1}_{i,j}|}.
 $$
+
 - **Frobenius-norm relative error**. This can be seen as an "amortized" error (i.e., RMSE) over all $i,j$ and it gives an insight on the average number of correct digits per element. It is defined as follows:
+
 $$
 \frac{\|A^{-1} - \widetilde A^{-1}\|_F}{\|A^{-1}\|_F}.
 $$
@@ -708,7 +757,7 @@ $$
 
 
 <p align="center">
-  <img src="./fig/errors-fp16.png" alt="total-errors" style="width: 80%; max-width: 800px;" />
+  <img src="./fig/errors-fp16.png" alt="total-errors" style="width: 70%; max-width: 800px;" />
 </p>
 
 `MCH` is the only method that returns inaccurate solutions for sizes larger than `32`. The `MXR` algorithm achieves almost the same accuracy as the other, more stable methods, but at the same time it achieves the same computational efficiency as `MCH`: it requires only $\approx 2\log(n)$ matrix products while maintaining high accuracy.
