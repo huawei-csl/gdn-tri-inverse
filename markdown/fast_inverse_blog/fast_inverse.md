@@ -454,10 +454,10 @@ def tri_inv_mxr(A):
     return X
 ```
 
+</details>
+
 A clean implementation of the MXR algorithm in PTO Python DSL is available in 
 [fast_inverse/block_inversion](https://github.com/huawei-csl/pto-dsl/tree/0.1.1/examples/aot/fast_inverse/block_inversion) (For educational purposes, without performance tuning, and recursing only one level. See the later section for the fully optimized version)
-
-</details>
 
 
 ## Summary of methods
