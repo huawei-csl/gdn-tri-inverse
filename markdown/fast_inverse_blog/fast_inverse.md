@@ -196,16 +196,15 @@ $$
 One can easily verify that the inverse of A can be written as
 
 $$
-A^{-1} = M_1 M_2
-=
+A^{-1} = M_1 M_2 =
 \begin{pmatrix}
 1 & -2 & 0 \\
-0 &  1 & 0 \\
-0 &  0 & 1
+0 & 1 & 0 \\
+0 & 0 & 1
 \end{pmatrix}\begin{pmatrix}
 1 & 0 & -3 \\
-0 &  1 & -4 \\
-0 &  0 & 1
+0 & 1 & -4 \\
+0 & 0 & 1
 \end{pmatrix}.
 $$
 
