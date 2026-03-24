@@ -2,7 +2,7 @@
 
 **TL;DR** We created a matrix inversion kernel that is **3x faster** than the current Triton kernel in sglang and vllm-ascend. The new kernel speeds up Gated DeltaNet by **20%~40% end-to-end** on NPU while maintaining (in some cases even improving) numerical accuracy.
 
-- Date: 2026/03/20
+- Date: 2026/03/25
 - Team: Aleksandros Sobczyk, Gioele Gottardo, Filip Skogh, Mirko De Vita, Christos Konstantinos Matzoros, Anastasios Zouzias, Jiawei Zhuang
 
 **To reproduce all results shown in this guide**, see:
