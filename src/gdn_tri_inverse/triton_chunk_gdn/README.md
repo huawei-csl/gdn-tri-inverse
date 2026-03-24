@@ -1,0 +1,1 @@
+GDN kernels copied from `https://github.com/sgl-project/sgl-kernel-npu/tree/main/python/sgl_kernel_npu/sgl_kernel_npu/fla`

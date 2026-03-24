@@ -1,4 +1,5 @@
 import torch
+import torch.nn.functional as F
 from typing import Optional
 import sgl_kernel_npu
 from sgl_kernel_npu.fla.solve_tril import solve_tril_npu as sgl_solve_tril_npu
@@ -94,3 +95,79 @@ def tri_inv_triton(A: torch.Tensor):
     A_view = A_view.reshape(1, 1, B * BT, BT).transpose(1, 2).contiguous()
     A_inv = sgl_solve_tril_npu(A_view)
     return A_inv.transpose(1, 2).reshape(B, BT, BT)
+
+
+def tri_inv_vcs_wrapper(A, cu_seqlens: Optional[torch.Tensor] = None):
+    B, T, H, BT = A.shape
+    chunk_size = BT
+    padding_size = (chunk_size - T % chunk_size) % chunk_size
+    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
+
+    A = A.transpose(1, 2).contiguous()
+    A = A.view(-1, BT, BT)
+
+    torch.npu.synchronize()
+    A_inv = tri_inv_vcs(-A)
+    torch.npu.synchronize()
+
+    A_inv = (
+        A_inv.view(B, H, -1, BT)[:, :, :T, :].contiguous().transpose(1, 2).contiguous()
+    )
+    return A_inv
+
+
+def tri_inv_mcs_wrapper(A, cu_seqlens: Optional[torch.Tensor] = None):
+    B, T, H, BT = A.shape
+    chunk_size = BT
+    padding_size = (chunk_size - T % chunk_size) % chunk_size
+    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
+
+    A = A.transpose(1, 2).contiguous()
+    A = A.view(-1, BT, BT)
+
+    torch.npu.synchronize()
+    A_inv = tri_inv_mcs(-A.to(dtype=torch.float16))
+    torch.npu.synchronize()
+
+    A_inv = (
+        A_inv.view(B, H, -1, BT)[:, :, :T, :]
+        .contiguous()
+        .transpose(1, 2)
+        .contiguous()
+        .to(dtype=A.dtype)
+    )
+    return A_inv
+
+
+def tri_inv_mxr_wrapper(A, cu_seqlens: Optional[torch.Tensor] = None):
+    B, T, H, BT = A.shape
+    chunk_size = BT
+    padding_size = (chunk_size - T % chunk_size) % chunk_size
+    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
+
+    A = A.transpose(1, 2).contiguous()
+    A = A.view(-1, BT, BT).transpose(1, 2).contiguous()
+
+    torch.npu.synchronize()
+    A_inv = tri_inv_mxr(A.to(dtype=torch.float16))
+    torch.npu.synchronize()
+
+    A_inv = (
+        A_inv.transpose(1, 2)
+        .contiguous()
+        .view(B, H, -1, BT)[:, :, :T, :]
+        .contiguous()
+        .transpose(1, 2)
+        .contiguous()
+        .to(dtype=A.dtype)
+    )
+    return A_inv
+
+
+def tri_inv_bsnd_mxr_wrapper(A, cu_seqlens: Optional[torch.Tensor] = None):
+    B, T, H, BT = A.shape
+    A = A.view(B * T // BT, BT, H, BT)
+
+    A_inv = tri_inv_mxr(A.to(dtype=torch.float16), is_bsnd=True).reshape(B, T, H, BT)
+
+    return A_inv

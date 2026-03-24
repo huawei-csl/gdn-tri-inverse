@@ -10,21 +10,20 @@ Profiling script that compares various solve_tril methods. Currently, profiles:
 """
 
 import argparse
-from curses import wrapper
 import logging
 import sys
 import os
 
-from numpy.linalg import inv
 import torch
 import torch.nn.functional as F
 from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
 
 
 from gdn_tri_inverse.linalg import (
-    tri_inv_vcs,
-    tri_inv_mcs,
-    tri_inv_mxr,
+    tri_inv_vcs_wrapper,
+    tri_inv_mcs_wrapper,
+    tri_inv_mxr_wrapper,
+    tri_inv_bsnd_mxr_wrapper,
 )
 
 from utils import Device, run_benchmark
@@ -47,88 +46,12 @@ NPU_DEVICE = os.getenv("GDN_TRI_INVERSE_NPU_DEVICE", "npu:0")
 device = Device(torch.npu, NPU_DEVICE)
 
 
-def column_sweep_wrapper(A):
-    B, T, H, BT = A.shape
-    chunk_size = BT
-    padding_size = (chunk_size - T % chunk_size) % chunk_size
-    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
-
-    A = A.transpose(1, 2).contiguous()
-    A = A.view(-1, BT, BT)
-
-    torch.npu.synchronize()
-    A_inv = tri_inv_vcs(-A)
-    torch.npu.synchronize()
-
-    A_inv = (
-        A_inv.view(B, H, -1, BT)[:, :, :T, :].contiguous().transpose(1, 2).contiguous()
-    )
-    return A_inv
-
-
-def cube_column_sweep_wrapper(A):
-    B, T, H, BT = A.shape
-    chunk_size = BT
-    padding_size = (chunk_size - T % chunk_size) % chunk_size
-    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
-
-    A = A.transpose(1, 2).contiguous()
-    A = A.view(-1, BT, BT)
-
-    torch.npu.synchronize()
-    A_inv = tri_inv_mcs(-A.to(dtype=torch.float16))
-    torch.npu.synchronize()
-
-    A_inv = (
-        A_inv.view(B, H, -1, BT)[:, :, :T, :]
-        .contiguous()
-        .transpose(1, 2)
-        .contiguous()
-        .to(dtype=A.dtype)
-    )
-    return A_inv
-
-
-def rec_unroll_wrapper(A):
-    B, T, H, BT = A.shape
-    chunk_size = BT
-    padding_size = (chunk_size - T % chunk_size) % chunk_size
-    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
-
-    A = A.transpose(1, 2).contiguous()
-    A = A.view(-1, BT, BT).transpose(1, 2).contiguous()
-
-    torch.npu.synchronize()
-    A_inv = tri_inv_mxr(A.to(dtype=torch.float16))
-    torch.npu.synchronize()
-
-    A_inv = (
-        A_inv.transpose(1, 2)
-        .contiguous()
-        .view(B, H, -1, BT)[:, :, :T, :]
-        .contiguous()
-        .transpose(1, 2)
-        .contiguous()
-        .to(dtype=A.dtype)
-    )
-    return A_inv
-
-
-def bsnd_rec_unroll_wrapper(A):
-    B, T, H, BT = A.shape
-    A = A.view(B * T // BT, BT, H, BT)
-
-    A_inv = tri_inv_mxr(A.to(dtype=torch.float16), is_bsnd=True)
-
-    return A_inv
-
-
 TRIANGULAR_INVERSE_METHODS_ = {
     "triton": solve_tril_npu,
-    "column-sweep": column_sweep_wrapper,
-    # "cube-column-sweep": cube_column_sweep_wrapper,
-    "cube-rec-unroll": rec_unroll_wrapper,
-    "bsnd-rec-unroll": bsnd_rec_unroll_wrapper,
+    "column-sweep": tri_inv_vcs_wrapper,
+    # "cube-column-sweep": tri_inv_mcs_wrapper,
+    "cube-rec-unroll": tri_inv_mxr_wrapper,
+    "bsnd-rec-unroll": tri_inv_bsnd_mxr_wrapper,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
 }
 
