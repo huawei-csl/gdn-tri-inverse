@@ -1,4 +1,4 @@
-.PHONY: clean setup_once install_gh_pto_kernels install_pto_kernels_internal install profile_tri_inv
+.PHONY: clean test_tri_inv install profile_tri_inv profile_gdn_layer profile_tilelang_full_gdn analyze_tilelang_opt_solve_tril
 
 clean:
 	rm -rf build kernel_meta/ output/
