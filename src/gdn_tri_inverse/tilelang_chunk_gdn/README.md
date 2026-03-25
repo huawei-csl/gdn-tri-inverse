@@ -1,11 +1,12 @@
-The contents of this directory are copied from `https://github.com/sgl-project/sgl-kernel-npu/tree/main/python/sgl_kernel_npu/sgl_kernel_npu/fla`
+The contents of this folder are copied from https://github.com/tile-ai/tilelang-ascend/tree/ascendc_pto/examples/linear_attention_and_rnn/opt_gdn
+at git commit 36bf582
 
-Below we copy the corresponding license statement from: https://github.com/sgl-project/sgl-kernel-npu/blob/main/LICENSE
+Below we attach the corresponding LICENSE statement from https://github.com/tile-ai/tilelang-ascend/blob/ascendc_pto/LICENSE:
 
 ```text
 MIT License
 
-Copyright (c) 2025 sgl-project
+Copyright (c) Tile-AI.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -23,6 +24,5 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+SOFTWARE
 ```
-
