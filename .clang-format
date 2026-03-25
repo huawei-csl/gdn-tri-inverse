@@ -1,5 +1,0 @@
-# Google C/C++ Code Style settings
-# https://clang.llvm.org/docs/ClangFormatStyleOptions.html
-
-Language: Cpp
-BasedOnStyle: Google
