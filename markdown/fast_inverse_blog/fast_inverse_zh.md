@@ -19,7 +19,7 @@
   - [对算法的要求](#desired-algorithm-properties)
   - [基础算法: 向量化的高斯消元法 (VCS, MCS)](#a-first-attempt-via-backward-substitution-vectorized-and-matrix-based-column-sweep-vcs-and-mcs)
   - [提高计算效率: 基于纯矩阵乘的求逆 (MCH)](#a-very-fast-matrix-product-based-algorithm)
-  - [提高数值精度：Bunch–Hopcroft法 (MBH)](#a-more-stable-matrix-based-algorithm-revisiting-bunch-and-hopcroft-mbh)
+  - [提高数值精度：分块递归求逆法 (MBH)](#a-more-stable-matrix-based-algorithm-revisiting-bunch-and-hopcroft-mbh)
   - [兼顾效率与精度：MCH与MBH结合 (MXR)](#the-best-of-both-worlds-combining-the-speed-of-mch-and-the-stability-of-mbh)
   - [5种算法对比总结](#summary-of-methods)
 - [基于昇腾的深入调优](#deep-dive-on-ascend-910b-implementations)
@@ -146,12 +146,10 @@ GPU后端默认走Triton融合算子 [solve_tril](https://github.com/fla-org/fla
 <a id="a-first-attempt-via-backward-substitution-vectorized-and-matrix-based-column-sweep-vcs-and-mcs"></a>
 ## 基础算法: 向量化的高斯消元法 (VCS, MCS)
 
-**VCS**（Vector Column-Sweep，向量列扫）：按列做前向代入，每一步用长度递减的向量运算更新一列。**MCS**（Matrix-based Column-Sweep，矩阵列扫）：同一套列扫思想，但写成一串初等块矩阵的链式矩阵乘，便于走矩阵单元。
+- **VCS**（Vector Column-Sweep，向量列扫）：按列做前向代入，每一步用长度递减的向量运算更新一列。
+- **MCS**（Matrix-based Column-Sweep，矩阵列扫）：同一套列扫思想，但写成一串初等块矩阵的链式矩阵乘，便于走矩阵单元。
 
-列扫（column-sweep）是按列做前向消元的标准写法（参见文献 [4]）。用 NumPy 可直观实现如下。
-
-- **复杂度**： $n$ 次**向量运算**，长度依次为 $n,n-1,n-2,\ldots,2,1$ $\rightarrow O(n^2)$ flops
-- **稳定性**：该算法被证明**数值稳定**，见文献[4]。
+列扫（column-sweep）是按列做前向消元的标准写法（参见文献 [4]）。用 NumPy 可直观实现如下：
 
 <details>
 <summary>VCS NumPy code</summary>
@@ -179,6 +177,9 @@ def tri_inv_vcs(U: np.ndarray) -> np.ndarray:
 ```
 
 </details>
+
+- **复杂度**： $n$ 次**向量运算**，长度依次为 $n,n-1,n-2,\ldots,2,1$ $\rightarrow O(n^2)$ flops
+- **稳定性**：该算法被证明**数值稳定**，见文献[4]。
 
 该方法的主要问题是**没有**利用NPU矩阵单元。可以把向量运算改写成矩阵形式（见文献[4]第 3.2.1 节公式3.8/3.9）。这里用一个 $3\times 3$ 例子说明。
 
@@ -210,9 +211,6 @@ A^{-1} = M_1 M_2 =
 
 对一般的 $n\times n$ shape, `MCS` 算法生成 $M_{n-1}M_{n-2}\cdots M_{1}$ 并做链式矩阵乘。相比起 `VCS` 算法，`MCS` 算法能走矩阵单元；代价是对阶数为 $n$ 的矩阵需要 $n-1$ 次矩阵乘。
 
-- **复杂度**： $n-1$ 次尺寸为 $n\times n$ 的 **matmul**，以及长度为 $O(n)$ 的 $O(n)$ 次**向量运算**
-- **稳定性**：与 VCS 一样**数值稳定**
-
 <details>
 <summary>MCS NumPy code</summary>
 
@@ -242,12 +240,15 @@ def tri_inv_mcs(U: np.ndarray) -> np.ndarray:
 
 </details>
 
+- **复杂度**： $n-1$ 次尺寸为 $n\times n$ 的 **matmul**，以及长度为 $O(n)$ 的 $O(n)$ 次**向量运算**
+- **稳定性**：与 VCS 一样**数值稳定**
+
 我们的[pto-kernels代码仓里](https://github.com/huawei-csl/pto-kernels/tree/v0.1.2/csrc/kernel)包含了`VCS`和`MCS`的实现，但二者的计算效率都不高，只能和基线持平。`VCS`的NPU亲和度太差，而`MCS`的理论复杂度太高，下文设计更快的算法。
 
 <a id="a-very-fast-matrix-product-based-algorithm"></a>
 ## 提高计算效率: 基于纯矩阵乘的求逆 (MCH)
 
-**MCH**（Matrix Cayley-Hamilton）：用 Cayley–Hamilton 定理把 $(I+U)^{-1}$ 写成交错符号的幂级数 $I-U+U^2-\cdots$，再通过反复矩阵平方与累乘（思路类似快速幂），在约 $O(\log n)$ 次 $n\times n$ 矩阵乘内得到逆。
+- **MCH**（Matrix Cayley-Hamilton）：用 Cayley–Hamilton 定理把 $(I+U)^{-1}$ 写成交错符号的幂级数 $I-U+U^2-\cdots$，再通过反复矩阵平方与累乘（思路类似快速幂），在约 $O(\log n)$ 次 $n\times n$ 矩阵乘内得到逆。
 
 一般的级数展开需要 $O(n)$ 次 $n\times n$ 规模的矩阵乘。文献 [9] 利用 **$A$ 的阶数常为 2 的幂**（常见 16、32、64），去掉多余项，进一步节省了计算：
 
@@ -389,11 +390,9 @@ $L_{ones}$ 的条件数其实很小；但在算法执行中，**第四次迭代*
 下节介绍的MBH，虽然对矩阵单元的利用率不是最高，但数值稳定性明显提高。
 
 <a id="a-more-stable-matrix-based-algorithm-revisiting-bunch-and-hopcroft-mbh"></a>
-## 提高数值精度：Bunch–Hopcroft法 (MBH)
+## 提高数值精度：分块递归求逆法 (MBH)
 
-**MBH**：沿用 Bunch–Hopcroft 的分块三角求逆公式，把矩阵对半划分，递归求小块的逆并用矩阵乘拼回。实现层面，把递归**展开（unrolled recursion）**，把底层大量小矩阵乘合并成适合矩阵单元的大块乘。
-
-（最早提出该方法的文献应该是 Bunch 与 Hopcroft [1]，故称 **MBH**）。
+- **MBH**：沿用 Bunch–Hopcroft 的分块三角求逆公式，把矩阵对半划分，递归求小块的逆并用矩阵乘拼回。实现层面，把递归**展开（unrolled recursion）**，把底层大量小矩阵乘合并成适合矩阵单元的大块乘。（最早提出该方法的文献应该是 Bunch 与 Hopcroft [1]，故称 **MBH**）。
 
 考虑分块求逆公式：
 
@@ -459,7 +458,7 @@ def tri_inv_mbh(A, X = None, starting_block_size = 1):
 
 先前提到的`MCH`不稳定算法，不适合单独使用，但是可以作为算法组件和`MBH`配合使用。
 
-**MXR**（Mixed MCH+MBH）：对角上的小块用 **MCH** 快速求逆，再用 **MBH** 全局组装。计算效率不比MCH差太多，而稳定性又接近MBH。
+- **MXR**（Mixed MCH+MBH）：对角上的小块用 **MCH** 快速求逆，再用 **MBH** 全局组装。计算效率不比MCH差太多，而稳定性又接近MBH。
 
 Hybrid 算法流程为：
 
@@ -552,7 +551,7 @@ X_{0,0} & 0 & \cdots & 0 & 0 \\
 在 $16\times 16$ 块上用 **MCH** 的原因有二：
 
 - Ascend 的 **AIC**（Cube）对 **fp16** 输入按 $16\times 16$ **tile** 切分；这是 PTO-ISA 里标准 data-copy / load 指令（如 `TMOV`、`TEXTRACT`）能直接操作的**最小**粒度。  
-- 因 **MCH** 的数值不稳定随规模指数恶化， $16\times 16$ 保持了**仍可接受数值误差**
+- 矩阵越大，**MCH** 算法的数值稳定性越差。 $16\times 16$ 保持了**仍可接受的数值误差**
 
 <a id="efficiently-moving-diagonal-blocks-between-l1-and-l0"></a>
 ## 优化技巧之高效搬运对角分块阵
@@ -721,7 +720,7 @@ A = 0.5 * np.tril(np.random.rand(n, n), k=-1)
 
 下图对 `float16` 与 `float32` 报告三类误差。记 $A=I+L$ 的精确逆矩阵为 $A^{-1}$，各方法输出为 $\widetilde A^{-1}$。
 
-- **Max element-wise absolute error**（最大逐元素绝对误差），等价于：
+- **Max element-wise absolute error**（最大逐元素绝对误差）：
 
 $$
 \max_{i,j} |A^{-1}_{i,j} - \widetilde A^{-1}_{i,j}|.
