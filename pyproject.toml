@@ -3,7 +3,7 @@ name = "gdn-tri-inverse"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "\"GDN Triangular Inverse Team - Huawei VNRC\""}
+    {name = "\"GDN Triangular Inverse Team\""}
 ]
 readme = "README.md"
 requires-python = ">=3.10"
