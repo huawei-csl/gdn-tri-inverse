@@ -66,7 +66,7 @@ def bench_stage(name: str, fn) -> float:
     # One synchronized preflight run makes async launch failures point at this stage.
     fn()
     torch.npu.synchronize()
-    ms = do_bench(fn)
+    ms = do_bench(fn, unit="ms")
     print(f"[bench-ok] {name}: {ms:.2f} ms")
     return ms
 
