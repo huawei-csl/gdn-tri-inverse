@@ -11,7 +11,7 @@
 #
 
 # On 910B2 server, we MUST build this image by yourself.
-DOCKER_IMAGE_TAG="gdn-tri-inverse:8.5.0-17062026"
+DOCKER_IMAGE_TAG="gdn-tri-inverse:8.5.0-25062026"
 
 drun() {
 
