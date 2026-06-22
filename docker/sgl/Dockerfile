@@ -18,7 +18,10 @@ RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} --branch ${SGL_KERNEL_NPU_BRANCH} 
 # Main image
 FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.9-cann8.5.0-910b AS main
 ARG TILELANG_ASCEND_COMMIT="d4736eb"
+ARG GDN_TRI_INVERSE_COMMIT
+
 ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
+ENV GDN_TRI_INVERSE_COMMIT=${GDN_TRI_INVERSE_COMMIT}
 
 # Install build dependencies
 RUN pip install pyyaml setuptools pytest
@@ -36,10 +39,12 @@ RUN pip install --force-reinstall /workspace/*.whl
 
 # Install gdn-tri-inverse
 RUN cd /workspace/ \
-    && git clone https://github.com/huawei-csl/gdn-tri-inverse.git
-RUN export CMAKE_GENERATOR="Unix Makefiles" \
-    && . /usr/local/Ascend/ascend-toolkit/set_env.sh \
-    && pip install -v git+https://github.com/huawei-csl/gdn-tri-inverse.git --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
+    && git clone https://github.com/huawei-csl/gdn-tri-inverse.git \
+    && cd gdn-tri-inverse \
+    && git checkout ${GDN_TRI_INVERSE_COMMIT} \
+    && source /usr/local/Ascend/ascend-toolkit/set_env.sh \
+    && export CMAKE_GENERATOR="Unix Makefiles" \
+    && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
 
 # Set up environment for runtime
 
