@@ -87,7 +87,7 @@ if __name__ == "__main__":  # noqa
     parser.add_argument("--warmup", type=int, default=5)
     parser.add_argument("--repeats", type=int, default=20)
     parser.add_argument("--inverse-type", type=str, default="baseline")
-    parser.add_argument("--input", type=str, default="profiling/data/Qwen3-Next")
+    parser.add_argument("--input", type=str)
     parser.add_argument("--chunk-size", type=int, default=64)
     parser.add_argument("--torch-profiler", action="store_true", default=False)
     args = parser.parse_args()
