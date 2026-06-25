@@ -14,7 +14,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 export MODEL_NAME="${MODEL_NAME:-Qwen/Qwen3.5-0.8B-Base}"
 export ATTENTION_BACKEND="${ATTENTION_BACKEND:-ascend}"
-export ASCEND_RT_VISIBLE_DEVICES=1,2 # Comma-separated device ids
+# export ASCEND_RT_VISIBLE_DEVICES=1,2 # Comma-separated device ids
 
 echo "[GDN-TRI-INVERSE] Starting SGLANG server."
 echo "[GDN-TRI-INVERSE] Press Ctrl+z and 'bg' to send process in background"
