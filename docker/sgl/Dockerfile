@@ -1,22 +1,23 @@
 ARG SGL_DOCKER_HOSTNAME=""
 
 # Downloader image
-FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.9-cann8.5.0-910b AS downloader
+FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-a3 AS downloader
 ARG SGL_KERNEL_NPU_BRANCH="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
 ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git"
 
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
 ENV SGL_KERNEL_NPU_BRANCH=${SGL_KERNEL_NPU_BRANCH}
 
-RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} --branch ${SGL_KERNEL_NPU_BRANCH} \
+RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && cd sgl-kernel-npu \
+    && git checkout ${SGL_KERNEL_NPU_BRANCH_OR_TAG} \
     && bash build.sh -a kernels \
     && cp output/sgl_kernel_npu*.whl /tmp/ \
     && cd ../ \
     && rm -rf sgl-kernel-npu
 
 # Main image
-FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.9-cann8.5.0-910b AS main
+FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-a3 AS main
 ARG TILELANG_ASCEND_COMMIT="d4736eb"
 ARG GDN_TRI_INVERSE_COMMIT
 
