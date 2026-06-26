@@ -25,8 +25,9 @@ ARG GDN_TRI_INVERSE_COMMIT
 ENV GDN_TRI_INVERSE_COMMIT=${GDN_TRI_INVERSE_COMMIT}
 
 # Install build dependencies
-RUN pip install pyyaml setuptools pytest
-RUN pip uninstall triton -y && pip install triton-ascend==3.2.1 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
+RUN python3 -m venv /workspace/venv
+RUN /workspace/venv/bin/pip install pyyaml setuptools pytest
+RUN /workspace/venv/bin/pip uninstall triton -y && /workspace/venv/bin/pip install triton-ascend==3.2.1 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
 
 # # Install tilelang
 # RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
@@ -36,7 +37,7 @@ RUN pip uninstall triton -y && pip install triton-ascend==3.2.1 --extra-index-ur
 
 # Install sgl-kernel-npu and pto-kernels
 COPY --from=downloader /tmp/*.whl /workspace/
-RUN pip install --force-reinstall /workspace/*.whl
+RUN /workspace/venv/bin/pip install --force-reinstall /workspace/*.whl
 
 # Install gdn-tri-inverse
 RUN cd /workspace/ \
@@ -45,7 +46,7 @@ RUN cd /workspace/ \
     && git checkout ${GDN_TRI_INVERSE_COMMIT} \
     && source /usr/local/Ascend/ascend-toolkit/set_env.sh \
     && export CMAKE_GENERATOR="Unix Makefiles" \
-    && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
+    && /workspace/venv/bin/pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
 
 # Set up environment for runtime
 
