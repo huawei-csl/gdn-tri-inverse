@@ -12,7 +12,6 @@ pushd $GDN_TRI_INVERSE_LOCAL_PATH \
 && docker build --no-cache --build-arg SGL_DOCKER_HOSTNAME="${SGL_DOCKER_HOSTNAME}" \
     --build-arg SGL_KERNEL_NPU_BRANCH_OR_TAG="${SGL_KERNEL_NPU_BRANCH_OR_TAG}" \
     --build-arg SGL_KERNEL_NPU_HTTPS_GIT_URL="${SGL_KERNEL_NPU_HTTPS_GIT_URL}" \
-    # --build-arg TILELANG_ASCEND_COMMIT="${TILELANG_ASCEND_COMMIT}" \
     --build-arg GDN_TRI_INVERSE_COMMIT="${GDN_TRI_INVERSE_COMMIT}" \
     -t "${DOCKER_IMAGE_TAG}" \
     -f Dockerfile . \
