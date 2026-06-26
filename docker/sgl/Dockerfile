@@ -1,12 +1,12 @@
 ARG SGL_DOCKER_HOSTNAME=""
 
 # Downloader image
-FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-a3 AS downloader
-ARG SGL_KERNEL_NPU_BRANCH="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
+FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-910b AS downloader
+ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="2026.6.2"
 ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git"
 
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
-ENV SGL_KERNEL_NPU_BRANCH=${SGL_KERNEL_NPU_BRANCH}
+ENV SGL_KERNEL_NPU_BRANCH_OR_TAG=${SGL_KERNEL_NPU_BRANCH_OR_TAG}
 
 RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && cd sgl-kernel-npu \
@@ -17,22 +17,22 @@ RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && rm -rf sgl-kernel-npu
 
 # Main image
-FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-a3 AS main
-ARG TILELANG_ASCEND_COMMIT="d4736eb"
+FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-910b AS main
+# ARG TILELANG_ASCEND_COMMIT="d4736eb"
 ARG GDN_TRI_INVERSE_COMMIT
 
-ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
+# ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
 ENV GDN_TRI_INVERSE_COMMIT=${GDN_TRI_INVERSE_COMMIT}
 
 # Install build dependencies
 RUN pip install pyyaml setuptools pytest
-RUN pip uninstall triton -y
+RUN pip uninstall triton -y && pip install triton-ascend==3.2.1 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
 
-# Install tilelang
-RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
-    && cd tilelang-ascend \
-    && git reset --hard ${TILELANG_ASCEND_COMMIT} \
-    && bash install_ascend.sh
+# # Install tilelang
+# RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
+#     && cd tilelang-ascend \
+#     && git reset --hard ${TILELANG_ASCEND_COMMIT} \
+#     && bash install_ascend.sh
 
 # Install sgl-kernel-npu and pto-kernels
 COPY --from=downloader /tmp/*.whl /workspace/
