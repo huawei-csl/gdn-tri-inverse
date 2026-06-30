@@ -1,5 +1,6 @@
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 export TRITON_ALL_BLOCKS_PARALLEL=1
+export GDN_TRI_INVERSE_NPU_DEVICE="npu:2"
 PYTHON_SCRIPT="$(dirname "$(realpath "$0")")"/profile_bsnd_inv_npu.py
 echo ${PYTHON_SCRIPT}
 python ${PYTHON_SCRIPT} --chunk-size 16

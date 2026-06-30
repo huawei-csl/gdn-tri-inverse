@@ -11,7 +11,7 @@
 #
 
 # On 910B2 server, we MUST build this image by yourself.
-DOCKER_IMAGE_TAG="gdn-tri-inverse:8.5.0-25062026"
+DOCKER_IMAGE_TAG="gdn-tri-inverse:9.0.0-25062026"
 
 drun() {
 
@@ -22,7 +22,6 @@ docker run -it --rm --privileged --network=host --ipc=host --shm-size=16g \
     --volume /usr/local/sbin:/usr/local/sbin --volume /usr/local/Ascend/driver:/usr/local/Ascend/driver \
     --volume /usr/local/Ascend/firmware:/usr/local/Ascend/firmware \
     --volume /etc/ascend_install.info:/etc/ascend_install.info \
-    --volume $(pwd):/workspace/gdn-tri-inv-repo \
     --name sglang-${USER} \
     --volume /var/queue_schedule:/var/queue_schedule --volume ~/.cache/:/root/.cache/ "$@"
 }

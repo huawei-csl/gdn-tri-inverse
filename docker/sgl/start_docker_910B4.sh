@@ -10,7 +10,7 @@
 #   ./start_docker_910B4.sh
 #
 
-DOCKER_IMAGE_TAG="gdn-tri-inverse:8.5.0-25062026"
+DOCKER_IMAGE_TAG="gdn-tri-inverse:9.0.0-25062026"
 
 drun() {
 
