@@ -18,12 +18,6 @@ RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && cd ../ \
     && rm -rf sgl-kernel-npu
 
-# RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
-#     && cd tilelang-ascend \
-#     && git checkout ${TILELANG_ASCEND_COMMIT} \
-#     && ./build_wheel_ascend.sh \
-#     && cp dist/tilelang-*.whl /tmp/
-
 # Main image
 FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-910b AS main
 ARG GDN_TRI_INVERSE_COMMIT

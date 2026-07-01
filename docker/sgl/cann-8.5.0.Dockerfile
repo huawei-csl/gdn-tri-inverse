@@ -2,14 +2,15 @@ ARG SGL_DOCKER_HOSTNAME=""
 
 # Downloader image
 FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.9-cann8.5.0-910b AS downloader
-ARG SGL_KERNEL_NPU_BRANCH="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
-ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git"
-
+ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="6-triinv-integrate-tri_inv_cube_col_sweep-kernel" # "2026.6.2" # for cube-col-sweep: 6-triinv-integrate-tri_inv_cube_col_sweep-kernel
+ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git" # "https://github.com/sgl-project/sgl-kernel-npu.git" # for cube-col-sweep: https://github.com/gioelegott/sgl-kernel-npu.git
+ 
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
-ENV SGL_KERNEL_NPU_BRANCH=${SGL_KERNEL_NPU_BRANCH}
+ENV SGL_KERNEL_NPU_BRANCH_OR_TAG=${SGL_KERNEL_NPU_BRANCH_OR_TAG}
 
-RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} --branch ${SGL_KERNEL_NPU_BRANCH} \
+RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && cd sgl-kernel-npu \
+    && git checkout ${SGL_KERNEL_NPU_BRANCH_OR_TAG} \
     && bash build.sh -a kernels \
     && cp output/sgl_kernel_npu*.whl /tmp/ \
     && cd ../ \
@@ -33,7 +34,7 @@ RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
     && git reset --hard ${TILELANG_ASCEND_COMMIT} \
     && bash install_ascend.sh
 
-# Install sgl-kernel-npu and pto-kernels
+# Install sgl-kernel-npu
 COPY --from=downloader /tmp/*.whl /workspace/
 RUN pip install --force-reinstall /workspace/*.whl
 
