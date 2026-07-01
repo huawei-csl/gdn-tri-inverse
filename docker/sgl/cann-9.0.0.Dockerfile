@@ -43,7 +43,7 @@ RUN cd /workspace/ \
 
 # Set up environment for runtime
 
-ADD ./set_env.sh /etc/profile.d/02-env-ascend-and-tilelang.sh
-RUN cat /etc/profile.d/02-env-ascend-and-tilelang.sh >> /root/.bashrc
+ADD ./set_env.sh /etc/profile.d/02-env-ascend.sh
+RUN cat /etc/profile.d/02-env-ascend.sh >> /root/.bashrc
 
 CMD ["/bin/bash"]

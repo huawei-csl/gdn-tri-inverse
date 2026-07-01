@@ -2,8 +2,8 @@ ARG SGL_DOCKER_HOSTNAME=""
 
 # Downloader image
 FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.9-cann8.5.0-910b AS downloader
-ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="6-triinv-integrate-tri_inv_cube_col_sweep-kernel" # "2026.6.2" # for cube-col-sweep: 6-triinv-integrate-tri_inv_cube_col_sweep-kernel
-ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git" # "https://github.com/sgl-project/sgl-kernel-npu.git" # for cube-col-sweep: https://github.com/gioelegott/sgl-kernel-npu.git
+ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
+ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git"
  
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
 ENV SGL_KERNEL_NPU_BRANCH_OR_TAG=${SGL_KERNEL_NPU_BRANCH_OR_TAG}
