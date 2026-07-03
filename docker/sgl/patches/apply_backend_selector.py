@@ -41,8 +41,10 @@ def _make_gdn_inv_fn():
 
         def _fn(A, cu_seqlens=None, output_dtype=None):
             print("Using pto-mxr backend.")
-            
-            A_inv = _kernel(A.to(torch.float16), is_bsnd_format=True)
+            if cu_seqlens is not None:
+                A_inv = _kernel(A.to(torch.float16), cu_seqlens=cu_seqlens, is_bsnd_format=True)
+            else:
+                A_inv = _kernel(A.to(torch.float16), is_bsnd_format=True)
             return A_inv.to(output_dtype) if output_dtype is not None else A_inv
 
         return _fn
