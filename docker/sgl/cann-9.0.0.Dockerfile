@@ -10,9 +10,12 @@ ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
 ENV SGL_KERNEL_NPU_BRANCH_OR_TAG=${SGL_KERNEL_NPU_BRANCH_OR_TAG}
 
+COPY ./patches/apply_backend_selector.py /tmp/apply_backend_selector.py
+
 RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && cd sgl-kernel-npu \
     && git checkout ${SGL_KERNEL_NPU_BRANCH_OR_TAG} \
+    && python /tmp/apply_backend_selector.py \
     && bash build.sh -a kernels \
     && cp output/sgl_kernel_npu*.whl /tmp/ \
     && cd ../ \

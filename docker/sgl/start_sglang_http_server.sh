@@ -14,9 +14,11 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 export MODEL_NAME="${MODEL_NAME:-Qwen/Qwen3.5-0.8B-Base}"
 export ATTENTION_BACKEND="${ATTENTION_BACKEND:-ascend}"
-# export ASCEND_RT_VISIBLE_DEVICES=1,2 # Comma-separated device ids
+export SOLVE_TRIL_BACKEND="${SOLVE_TRIL_BACKEND:-default}"
+# export ASCEND_RT_VISIBLE_DEVICES=2,3 # Comma-separated device ids
 
 echo "[GDN-TRI-INVERSE] Starting SGLANG server."
+echo "[GDN-TRI-INVERSE] solve_tril backend: ${SOLVE_TRIL_BACKEND}"
 echo "[GDN-TRI-INVERSE] Press Ctrl+z and 'bg' to send process in background"
 echo "[GDN-TRI-INVERSE] Default model is Qwen/Qwen3.5-0.8B-Base, you can change it by modifying the --model-path parameter in this script or the MODEL_NAME environment variable."
 sglang serve \
