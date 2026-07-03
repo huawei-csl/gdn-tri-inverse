@@ -35,49 +35,14 @@ def _make_gdn_inv_fn():
     """
     _backend = _os.getenv("SOLVE_TRIL_BACKEND", "default")
 
-    if _backend == "pto-vcs":
-        import torch
-        from pto_kernels import pto_tri_inv as _kernel
-
-        def _fn(A, cu_seqlens=None, output_dtype=None):
-            B, T, H, BT = A.shape
-            pad = (BT - T % BT) % BT
-            A_p = _F.pad(A, (0, 0, 0, 0, 0, pad, 0, 0)) if pad else A
-            A_p = A_p.transpose(1, 2).contiguous().view(-1, BT, BT)
-            torch.npu.synchronize()
-            A_inv = _kernel(-A_p)
-            torch.npu.synchronize()
-            A_inv = (
-                A_inv.view(B, H, -1, BT)[:, :, :T, :]
-                .contiguous()
-                .transpose(1, 2)
-                .contiguous()
-            )
-            return A_inv.to(output_dtype) if output_dtype is not None else A_inv
-
-        return _fn
-
     if _backend == "pto-mxr":
         import torch
         from pto_kernels import pto_tri_inv_rec_unroll as _kernel
 
         def _fn(A, cu_seqlens=None, output_dtype=None):
-            B, T, H, BT = A.shape
-            pad = (BT - T % BT) % BT
-            A_p = _F.pad(A, (0, 0, 0, 0, 0, pad, 0, 0)) if pad else A
-            # pto_tri_inv_rec_unroll expects upper-triangular input: transpose matrix dims
-            A_p = (
-                A_p.transpose(1, 2).contiguous().view(-1, BT, BT).transpose(1, 2).contiguous()
-            )
-            A_inv = _kernel(A_p.to(torch.float16))
-            A_inv = (
-                A_inv.transpose(1, 2)
-                .contiguous()
-                .view(B, H, -1, BT)[:, :, :T, :]
-                .contiguous()
-                .transpose(1, 2)
-                .contiguous()
-            )
+            print("Using pto-mxr backend.")
+            
+            A_inv = _kernel(A.to(torch.float16), is_bsnd_format=True)
             return A_inv.to(output_dtype) if output_dtype is not None else A_inv
 
         return _fn
@@ -102,8 +67,10 @@ IDEMPOTENCY_MARKER = "_GDN_INV_FN"
 
 def patch(path: Path) -> None:
     if not path.exists():
-        print(f"ERROR: {path} not found -- run from the sgl-kernel-npu repository root",
-              file=sys.stderr)
+        print(
+            f"ERROR: {path} not found -- run from the sgl-kernel-npu repository root",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     text = path.read_text(encoding="utf-8")
