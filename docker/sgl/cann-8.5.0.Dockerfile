@@ -2,14 +2,15 @@ ARG SGL_DOCKER_HOSTNAME=""
 
 # Downloader image
 FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.9-cann8.5.0-910b AS downloader
-ARG SGL_KERNEL_NPU_BRANCH="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
+ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="6-triinv-integrate-tri_inv_cube_col_sweep-kernel"
 ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/gioelegott/sgl-kernel-npu.git"
-
+ 
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
-ENV SGL_KERNEL_NPU_BRANCH=${SGL_KERNEL_NPU_BRANCH}
+ENV SGL_KERNEL_NPU_BRANCH_OR_TAG=${SGL_KERNEL_NPU_BRANCH_OR_TAG}
 
-RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} --branch ${SGL_KERNEL_NPU_BRANCH} \
+RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && cd sgl-kernel-npu \
+    && git checkout ${SGL_KERNEL_NPU_BRANCH_OR_TAG} \
     && bash build.sh -a kernels \
     && cp output/sgl_kernel_npu*.whl /tmp/ \
     && cd ../ \
@@ -24,8 +25,13 @@ ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
 ENV GDN_TRI_INVERSE_COMMIT=${GDN_TRI_INVERSE_COMMIT}
 
 # Install build dependencies
-RUN pip install pyyaml setuptools pytest
-RUN pip uninstall triton -y
+RUN pip install pyyaml setuptools pytest scikit-build-core pybind11
+RUN pip install torch-npu==2.8.0.post2 --extra-index-url https://download.pytorch.org/whl/cpu 
+RUN pip uninstall triton -y # required to avoid conflicts with triton-ascend
+
+RUN source /usr/local/Ascend/ascend-toolkit/set_env.sh \
+    && export CMAKE_GENERATOR="Unix Makefiles" \
+    && pip install --no-deps --no-build-isolation -v git+https://github.com/huawei-csl/pto-kernels.git
 
 # Install tilelang
 RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
@@ -33,18 +39,17 @@ RUN git clone --recursive https://github.com/tile-ai/tilelang-ascend.git \
     && git reset --hard ${TILELANG_ASCEND_COMMIT} \
     && bash install_ascend.sh
 
-# Install sgl-kernel-npu and pto-kernels
+# Install sgl-kernel-npu
 COPY --from=downloader /tmp/*.whl /workspace/
 RUN pip install --force-reinstall /workspace/*.whl
+
 
 # Install gdn-tri-inverse
 RUN cd /workspace/ \
     && git clone https://github.com/huawei-csl/gdn-tri-inverse.git \
     && cd gdn-tri-inverse \
     && git checkout ${GDN_TRI_INVERSE_COMMIT} \
-    && source /usr/local/Ascend/ascend-toolkit/set_env.sh \
-    && export CMAKE_GENERATOR="Unix Makefiles" \
-    && pip install -v . --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
+    && pip install -v . --no-deps --extra-index-url https://download.pytorch.org/whl/cpu --extra-index-url https://test.pypi.org/simple/
 
 # Set up environment for runtime
 
