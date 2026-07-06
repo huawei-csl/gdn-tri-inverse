@@ -8,7 +8,6 @@ Run from the sgl-kernel-npu repository root before building the wheel:
 
 Supported values for SOLVE_TRIL_BACKEND (set at container start time):
     default   -- keep the original solve_tril_npu triton kernel (no change)
-    pto-vcs   -- use pto_kernels.pto_tri_inv (vector column sweep)
     pto-mxr   -- use pto_kernels.pto_tri_inv_rec_unroll (matmul recursive unroll)
 
 The script is idempotent: it exits cleanly if chunk.py is already patched.

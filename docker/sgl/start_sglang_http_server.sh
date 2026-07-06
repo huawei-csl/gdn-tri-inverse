@@ -14,7 +14,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 export MODEL_NAME="${MODEL_NAME:-Qwen/Qwen3.5-0.8B-Base}"
 export ATTENTION_BACKEND="${ATTENTION_BACKEND:-ascend}"
-export SOLVE_TRIL_BACKEND="${SOLVE_TRIL_BACKEND:-default}"
+export SOLVE_TRIL_BACKEND="${SOLVE_TRIL_BACKEND:-default}" # options: "default" or "pto-mxr"
 # export ASCEND_RT_VISIBLE_DEVICES=2,3 # Comma-separated device ids
 
 echo "[GDN-TRI-INVERSE] Starting SGLANG server."
