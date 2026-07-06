@@ -39,7 +39,6 @@ def _make_gdn_inv_fn():
         from pto_kernels import pto_tri_inv_rec_unroll as _kernel
 
         def _fn(A, cu_seqlens=None, output_dtype=None):
-            print("Using pto-mxr backend.")
             if cu_seqlens is not None:
                 A_inv = _kernel(A.to(torch.float16), cu_seqlens=cu_seqlens, is_bsnd_format=True, is_lower=True)
             else:
