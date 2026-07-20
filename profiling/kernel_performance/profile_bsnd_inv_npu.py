@@ -21,7 +21,6 @@ from sgl_kernel_npu.fla.solve_tril import solve_tril_npu
 
 from gdn_tri_inverse.linalg import (
     tri_inv_vcs_wrapper,
-    tri_inv_mcs_wrapper,
     tri_inv_mxr_wrapper,
     tri_inv_bsnd_mxr_wrapper,
 )
@@ -49,7 +48,6 @@ device = Device(torch.npu, NPU_DEVICE)
 TRIANGULAR_INVERSE_METHODS_ = {
     "triton": solve_tril_npu,
     "column-sweep": tri_inv_vcs_wrapper,
-    # "cube-column-sweep": tri_inv_mcs_wrapper,
     "cube-rec-unroll": tri_inv_mxr_wrapper,
     "bsnd-rec-unroll": tri_inv_bsnd_mxr_wrapper,
     # "pto_tri_inv_trick": pto_tri_inv_trick,
