@@ -45,19 +45,6 @@ def tri_inv_vcs(A: torch.Tensor) -> torch.Tensor:
     return A_inv.reshape(A.shape)
 
 
-def tri_inv_mcs(A: torch.Tensor) -> torch.Tensor:
-    """
-    MCS stands for Matrix Column Sweep. The algorithm uses internally
-    vector (AIV) and cube units (AIC).
-    """
-    n = A.shape[-1]
-    A_view = A.view(-1, n, n)
-    A_inv = torch.ops.npu.cube_triangular_inverse(
-        A_view
-    )  # requires import sgl_kernel_npu
-    return A_inv.reshape(A.shape)
-
-
 def tri_inv_mxr(A: torch.Tensor, is_bsnd: bool = False) -> torch.Tensor:
     """
     The individual matrices of the tensor A must be strictly
@@ -112,29 +99,6 @@ def tri_inv_vcs_wrapper(A, cu_seqlens: Optional[torch.Tensor] = None):
 
     A_inv = (
         A_inv.view(B, H, -1, BT)[:, :, :T, :].contiguous().transpose(1, 2).contiguous()
-    )
-    return A_inv
-
-
-def tri_inv_mcs_wrapper(A, cu_seqlens: Optional[torch.Tensor] = None):
-    B, T, H, BT = A.shape
-    chunk_size = BT
-    padding_size = (chunk_size - T % chunk_size) % chunk_size
-    A = F.pad(A, (0, 0, 0, 0, 0, padding_size, 0, 0))
-
-    A = A.transpose(1, 2).contiguous()
-    A = A.view(-1, BT, BT)
-
-    torch.npu.synchronize()
-    A_inv = tri_inv_mcs(-A.to(dtype=torch.float16))
-    torch.npu.synchronize()
-
-    A_inv = (
-        A_inv.view(B, H, -1, BT)[:, :, :T, :]
-        .contiguous()
-        .transpose(1, 2)
-        .contiguous()
-        .to(dtype=A.dtype)
     )
     return A_inv
 

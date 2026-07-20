@@ -3,16 +3,16 @@
 import pytest
 from torch.testing import assert_close
 import torch
+import os
 
 from gdn_tri_inverse.linalg import (
     tri_inv_qwen3_next_default,
     tri_inv_vcs,
     tri_inv_mxr,
-    tri_inv_mcs,
     tri_inv_triton,
 )
 
-device = "npu:0"  # pick an available device
+device = os.getenv("NPU_DEVICE", "npu:0")  # pick an available device
 
 
 def gen_random_matrix(shape, dtype):
@@ -40,13 +40,9 @@ def _test_tri_inv_common(
     Identity = torch.eye(chunk_size, dtype=ref_dtype)
     L = matrix_gen(shape=shape, dtype=dtype)
     L = torch.tril(L, diagonal=-1)
-    if tri_inv_fn in [tri_inv_mxr, tri_inv_mcs]:
-        L = L.transpose(-1, -2).contiguous()
     I_plus_L = Identity + L.to(ref_dtype)
 
     A = L
-    if tri_inv_fn == tri_inv_mcs:
-        A = I_plus_L.to(dtype)
 
     A_npu = A.npu()
     torch.npu.synchronize()
@@ -73,7 +69,6 @@ def _test_tri_inv_common(
 @pytest.mark.parametrize(
     "tri_inv_fn,dtype,atol,rtol",
     [
-        (tri_inv_mcs, torch.float16, 1e-5, 1e-2),
         (tri_inv_vcs, torch.float16, 1e-5, 1e-2),
         (tri_inv_vcs, torch.float32, 1e-8, 5e-5),
         (tri_inv_mxr, torch.float16, 1e-5, 1e-2),
