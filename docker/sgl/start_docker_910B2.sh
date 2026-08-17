@@ -12,7 +12,7 @@
 
 # On 910B2 server, we MUST build this image by yourself.
 CANN_VERSION="${CANN_VERSION:-9.0.0}" # 8.5.0 or 9.0.0
-DOCKER_IMAGE_TAG="gdn-tri-inverse:${CANN_VERSION}-25062026"
+DOCKER_IMAGE_TAG="gdn-tri-inverse:${CANN_VERSION}-12082026"
 
 drun() {
 
