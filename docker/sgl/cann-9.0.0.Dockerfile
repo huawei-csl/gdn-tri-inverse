@@ -3,8 +3,8 @@ ARG SGL_DOCKER_HOSTNAME=""
 # Downloader image
 FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.17-cann9.0.0-910b AS downloader
 ARG TILELANG_ASCEND_COMMIT="63bef06" # v0.1.1.010-release
-ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="upstream_megaGDN_pto_kernel"
-ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/zouzias/sgl-kernel-npu.git"
+ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="2026.6.2"
+ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/sgl-project/sgl-kernel-npu.git"
 
 ENV TILELANG_ASCEND_COMMIT=${TILELANG_ASCEND_COMMIT}
 ENV SGL_KERNEL_NPU_HTTPS_GIT_URL=${SGL_KERNEL_NPU_HTTPS_GIT_URL}
