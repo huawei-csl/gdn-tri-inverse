@@ -10,5 +10,5 @@ do
         --tasks ${LM_EVAL_TASKS} \
         --model_args model=${MODEL_NAME},base_url=${BASE_URL} \
         --batch_size auto \
-        --output_path ${OUTPUT_PATH} > /dev/null 2>&1
+        --output_path ${OUTPUT_PATH}
 done
