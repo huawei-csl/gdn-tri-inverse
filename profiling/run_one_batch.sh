@@ -72,5 +72,5 @@ python3 -m sglang.bench_one_batch \
     --batch-size ${BATCH_SIZE} \
     --input-len ${INPUT_LEN} \
     --output-len ${OUTPUT_LEN} \
-    --result-filename "result.jsonl result_${BATCH_SIZE}_${INPUT_LEN}_mega.jsonl"
+    --result-filename "result_${BATCH_SIZE}_${INPUT_LEN}_mega.jsonl"
 done
