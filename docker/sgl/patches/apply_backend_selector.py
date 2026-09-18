@@ -7,8 +7,9 @@ Run from the sgl-kernel-npu repository root before building the wheel:
     python /tmp/apply_backend_selector.py
 
 Supported values for SOLVE_TRIL_BACKEND (set at container start time):
-    default   -- keep the original solve_tril_npu triton kernel (no change)
-    pto-mxr   -- use pto_kernels.pto_tri_inv_rec_unroll (matmul recursive unroll)
+    default    -- keep the original solve_tril_npu triton kernel (no change)
+    pto-mxr    -- use pto_kernels.pto_tri_inv_rec_unroll (matmul recursive unroll)
+    pto-mxr-32 -- same as above but with specified doubling block size (supported 16, 32, 64, 128)
 
 The script is idempotent: it exits cleanly if chunk.py is already patched.
 It exits with a non-zero status if the expected target string is not found,
