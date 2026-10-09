@@ -7,8 +7,9 @@ Run from the sgl-kernel-npu repository root before building the wheel:
     python /tmp/apply_backend_selector.py
 
 Supported values for SOLVE_TRIL_BACKEND (set at container start time):
-    default   -- keep the original solve_tril_npu triton kernel (no change)
-    pto-mxr   -- use pto_kernels.pto_tri_inv_rec_unroll (matmul recursive unroll)
+    default    -- keep the original solve_tril_npu triton kernel (no change)
+    pto-mxr    -- use pto_kernels.pto_tri_inv_rec_unroll (matmul recursive unroll)
+    pto-mxr-32 -- same as above but with specified doubling block size (supported 16, 32, 64, 128)
 
 The script is idempotent: it exits cleanly if chunk.py is already patched.
 It exits with a non-zero status if the expected target string is not found,
@@ -34,15 +35,19 @@ def _make_gdn_inv_fn():
     """
     _backend = _os.getenv("SOLVE_TRIL_BACKEND", "default")
 
-    if _backend == "pto-mxr":
+    if _backend.startswith("pto-mxr"):
         import torch
         from pto_kernels import pto_tri_inv_rec_unroll as _kernel
-
+        doubling_block_size = 16
+        if _backend.replace('pto-mxr','') is not '':
+            doubling_block_size = int(_backend.split('-')[-1])
+        if doubling_block_size not in [16,32,64,128]:
+            raise ValueError(f'Doubling block size for pto-mxr must be one of [16,32,64,128]. {doubling_block_size} given (SOLVE_TRIL_BACKEND={_backend})')
         def _fn(A, cu_seqlens=None, output_dtype=None):
             if cu_seqlens is not None:
-                A_inv = _kernel(A.to(torch.float16), cu_seqlens=cu_seqlens, is_bsnd_format=True, is_lower=True)
+                A_inv = _kernel(A.to(torch.float16), cu_seqlens=cu_seqlens, is_bsnd_format=True, is_lower=True, max_doubling_block_size=doubling_block_size)
             else:
-                A_inv = _kernel(A.to(torch.float16), is_bsnd_format=True, is_lower=True)
+                A_inv = _kernel(A.to(torch.float16), is_bsnd_format=True, is_lower=True, max_doubling_block_size=doubling_block_size)
             return A_inv.to(output_dtype) if output_dtype is not None else A_inv
 
         return _fn
