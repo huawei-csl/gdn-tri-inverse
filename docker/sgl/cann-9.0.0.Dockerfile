@@ -1,7 +1,7 @@
 ARG SGL_DOCKER_HOSTNAME=""
 
 # Downloader image
-FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-910b AS downloader
+FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.17-cann9.0.0-910b AS downloader
 ARG TILELANG_ASCEND_COMMIT="63bef06" # v0.1.1.010-release
 ARG SGL_KERNEL_NPU_BRANCH_OR_TAG="2026.6.2"
 ARG SGL_KERNEL_NPU_HTTPS_GIT_URL="https://github.com/sgl-project/sgl-kernel-npu.git"
@@ -22,7 +22,7 @@ RUN git clone ${SGL_KERNEL_NPU_HTTPS_GIT_URL} \
     && rm -rf sgl-kernel-npu
 
 # Main image
-FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.13.post1-cann9.0.0-910b AS main
+FROM ${SGL_DOCKER_HOSTNAME}quay.io/ascend/sglang:v0.5.17-cann9.0.0-910b AS main
 ARG GDN_TRI_INVERSE_COMMIT
 
 ENV GDN_TRI_INVERSE_COMMIT=${GDN_TRI_INVERSE_COMMIT}
@@ -37,7 +37,7 @@ RUN pip install /workspace/*.whl
 # Install gdn-tri-inverse
 RUN pip install pyyaml setuptools pytest
 # RUN pip install torch-npu==2.10.0 --extra-index-url https://download.pytorch.org/whl/cpu
-RUN pip install pto-kernels==0.1.4 
+RUN pip install pto-kernels==0.1.5
 RUN cd /workspace/ \
     && git clone https://github.com/huawei-csl/gdn-tri-inverse.git \
     && cd gdn-tri-inverse \
